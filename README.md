@@ -9,7 +9,7 @@ El siguiente trabajo es un enunciado iterativo. Regularmente se ampliará y/o mo
 
 [ENTREGA](https://forms.gle/NeM1adptvvtioRJH9) (El form cierra el 21/9)
 
-- El trabajo debe implementarse en .NET, usando Git para el control de versiones y NUnit como framework de testing.
+- El trabajo está implementado en **.NET 8.0 (`net8.0`)**, usando Git para el control de versiones y NUnit como framework de testing.
 - Los tests unitarios no deben depender de la base de datos real. Tienen [este ejercicio](https://github.com/mgonzalesips/Tienda) de ejemplo para ver como hacerlo
 - **Todos** los métodos deben estar testeados con un test unitario, aunque no se aclare explícitamente en el enunciado.
 - Para la nota final se tomará en cuenta no solo el código fuente de la implementación, sino también el uso de Git y las herramientas que este provee como commits, ramas y tags ademas de los tests.
