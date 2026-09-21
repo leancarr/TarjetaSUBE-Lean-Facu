@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace Transporte
 {
@@ -15,5 +14,27 @@ namespace Transporte
         
         public int ColectivoId { get; set; }
         public Colectivo Colectivo { get; set; } = null!;
+
+        public Boleto()
+        {
+        }
+
+        public Boleto(decimal monto, decimal saldoRestante, Tarjeta tarjeta, Colectivo colectivo)
+        {
+            FechaHora = DateTime.Now;
+            Monto = monto;
+            SaldoRestante = saldoRestante;
+            Tarjeta = tarjeta;
+            Colectivo = colectivo;
+        }
+
+        public Boleto(decimal monto, decimal saldoRestante, Tarjeta tarjeta, Colectivo colectivo, DateTime fechaHora)
+        {
+            FechaHora = fechaHora;
+            Monto = monto;
+            SaldoRestante = saldoRestante;
+            Tarjeta = tarjeta;
+            Colectivo = colectivo;
+        }
     }
 }
