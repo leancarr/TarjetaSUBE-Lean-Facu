@@ -1,0 +1,9 @@
+# Archivos ignorados temporalmente
+tareas.md
+
+# Ignorar carpetas de compilación por defecto de .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
