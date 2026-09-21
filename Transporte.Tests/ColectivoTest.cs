@@ -14,6 +14,32 @@ namespace Transporte.Tests
         }
 
         [Test]
+        public void Constructor_SinParametros_CreaInstanciaCorrecta()
+        {
+            var cole = new Colectivo();
+            Assert.IsNotNull(cole);
+            Assert.AreEqual(string.Empty, cole.Linea);
+            Assert.AreEqual(0, cole.Id);
+        }
+
+        [Test]
+        public void Constructor_ConLinea_AsignaLineaCorrectamente()
+        {
+            Assert.AreEqual("Linea 122", colectivo.Linea);
+        }
+
+        [Test]
+        public void Propiedades_IdYLinea_AsignanYRecuperanValores()
+        {
+            var cole = new Colectivo();
+            cole.Id = 5;
+            cole.Linea = "Linea K";
+
+            Assert.AreEqual(5, cole.Id);
+            Assert.AreEqual("Linea K", cole.Linea);
+        }
+
+        [Test]
         public void PagarCon_SaldoSuficiente_GeneraBoleto()
         {
             var tarjeta = new Tarjeta();

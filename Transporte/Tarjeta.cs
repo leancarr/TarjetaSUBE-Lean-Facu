@@ -4,6 +4,8 @@ using System.Linq;
 
 namespace Transporte
 {
+    // SRP: Tarjeta gestiona exclusivamente el estado y las reglas de su saldo (cargas permitidas, límites y débitos).
+    // No conoce conceptos de Colectivo, tarifas de transporte ni emisión de boletos.
     public class Tarjeta
     {
         public int Id { get; set; }

@@ -12,6 +12,19 @@ namespace Transporte.Tests
             tarjeta = new Tarjeta();
         }
 
+        [Test]
+        public void SaldoInicial_EsCero()
+        {
+            Assert.AreEqual(0, tarjeta.Saldo);
+        }
+
+        [Test]
+        public void Propiedad_Id_AsignaYRecuperaCorrectamente()
+        {
+            tarjeta.Id = 42;
+            Assert.AreEqual(42, tarjeta.Id);
+        }
+
         [TestCase(2000)]
         [TestCase(3000)]
         [TestCase(4000)]

@@ -2,6 +2,9 @@ using System;
 
 namespace Transporte
 {
+    // SRP: Boleto funciona como un comprobante histórico de la transacción.
+    // Almacena los datos del momento del pago (tarifa cobrada, saldo resultante, fecha/hora y entidades relacionadas)
+    // sin contener lógica de negocio ni modificar el estado de otros objetos.
     public class Boleto
     {
         public int Id { get; set; }
