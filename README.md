@@ -40,3 +40,12 @@ Se pide:
 - Implementar el código de las clases Tarjeta, Colectivo y Boleto.
 - Hacer que el test Tarjeta.cs funcione correctamente con todos los montos de pago listados.
 - Enviar el enlace del repositorio al mail del profesor con los integrantes del grupo: dos por grupo.
+## Iteración 2
+
+### Tareas
+1. **Descuento de saldos**: Cambiar cómo se comporta el pago cuando no hay saldo.
+2. **(Pendiente de definir por Leandro)**
+3. **(Pendiente de definir por Leandro)**
+
+### Cambios de contrato
+- El método PagarCon de la clase Colectivo ha modificado su firma. Ahora utiliza el patrón out para devolver el boleto, retornando un ool que indica si el pago fue exitoso (es decir, si la tarjeta contaba con saldo suficiente). La nueva firma es: ool PagarCon(Tarjeta tarjeta, out Boleto boleto).
