@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 
 namespace Transporte.Tests
 {
@@ -63,21 +63,26 @@ namespace Transporte.Tests
         }
 
         [Test]
-        public void Debitar_SaldoSuficiente_DescuentaSaldo()
+        public void PuedeDescontar_SaldoSuficiente_DevuelveTrue()
         {
             tarjeta.Cargar(2000);
-            tarjeta.Debitar(1580);
-            Assert.AreEqual(2000 - 1580, tarjeta.Saldo);
+            Assert.IsTrue(tarjeta.PuedeDescontar(1580));
         }
 
         [Test]
-        public void Debitar_SaldoInsuficiente_LanzaExcepcion()
+        public void PuedeDescontar_SaldoInsuficiente_DevuelveFalse()
         {
             tarjeta.Cargar(2000);
-            tarjeta.Debitar(1580); 
-            
-            Assert.Throws<SaldoInsuficienteException>(() => tarjeta.Debitar(1580));
-            Assert.AreEqual(420, tarjeta.Saldo);
+            tarjeta.Descontar(1580);
+            Assert.IsFalse(tarjeta.PuedeDescontar(1580));
+        }
+
+        [Test]
+        public void Descontar_RestaMontoDelSaldo()
+        {
+            tarjeta.Cargar(2000);
+            tarjeta.Descontar(1580);
+            Assert.AreEqual(2000 - 1580, tarjeta.Saldo);
         }
     }
 }

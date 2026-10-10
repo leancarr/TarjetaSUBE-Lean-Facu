@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -29,13 +29,13 @@ namespace Transporte
             Saldo += monto;
         }
 
-        public void Debitar(decimal monto)
+        public bool PuedeDescontar(decimal monto)
         {
-            if (Saldo < monto)
-            {
-                throw new SaldoInsuficienteException("Saldo insuficiente para realizar el pago.");
-            }
+            return Saldo >= monto;
+        }
 
+        public void Descontar(decimal monto)
+        {
             Saldo -= monto;
         }
     }
