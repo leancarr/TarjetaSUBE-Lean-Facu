@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using NUnit.Framework;
 
 namespace Transporte.Tests
@@ -58,15 +58,18 @@ namespace Transporte.Tests
         }
 
         [Test]
-        public void PagarCon_SinSaldo_DevuelveFalse()
+        public void PagarCon_SinSaldoSuficienteNiCreditoNegativo_DevuelveFalse()
         {
             var tarjeta = new Tarjeta(); // Saldo = 0
-            
+            // El primer viaje se permite consumiendo saldo negativo (viaje plus)
+            colectivo.PagarCon(tarjeta, out _);
+
+            // El segundo viaje excede el límite de -2000 (-1580 - 1580 = -3160)
             bool resultado = colectivo.PagarCon(tarjeta, out var boleto);
 
             Assert.IsFalse(resultado);
             Assert.IsNull(boleto);
-            Assert.AreEqual(0, tarjeta.Saldo);
+            Assert.AreEqual(-1580, tarjeta.Saldo);
         }
 
         [Test]
