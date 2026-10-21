@@ -90,84 +90,84 @@ namespace Transporte.Tests
         [Test]
         public void PagarCon_SaldoAlLimiteNegativo_DevuelveFalse()
         {
-            var t = new Tarjeta();
-            t.Cargar(2000);
+            var tarjeta = new Tarjeta();
+            tarjeta.Cargar(2000);
             var colectivo = new Colectivo();
 
             // Consume hasta dejar la tarjeta en el límite o cerca del mismo
-            while (t.PuedeDescontar(Colectivo.TarifaBasica))
-                colectivo.PagarCon(t, out _);
+            while (tarjeta.PuedeDescontar(Colectivo.TarifaBasica))
+                colectivo.PagarCon(tarjeta, out _);
 
-            decimal saldoAntes = t.Saldo;
-            bool resultado = colectivo.PagarCon(t, out var boleto);
+            decimal saldoAntes = tarjeta.Saldo;
+            bool resultado = colectivo.PagarCon(tarjeta, out var boleto);
 
             Assert.IsFalse(resultado);
             Assert.IsNull(boleto);
-            Assert.AreEqual(saldoAntes, t.Saldo);
-            Assert.GreaterOrEqual(t.Saldo, Tarjeta.LimiteNegativo);
+            Assert.AreEqual(saldoAntes, tarjeta.Saldo);
+            Assert.GreaterOrEqual(tarjeta.Saldo, Tarjeta.LimiteNegativo);
         }
 
         [Test]
         public void PagarCon_ViajesPlus_DescuentaCorrectamenteSaldoNegativoAcumulado()
         {
-            var t = new Tarjeta();
-            t.Cargar(3000);
+            var tarjeta = new Tarjeta();
+            tarjeta.Cargar(3000);
             var colectivo = new Colectivo();
 
             // Viaje 1 (con saldo positivo): 3000 - 1580 = 1420
-            bool viaje1 = colectivo.PagarCon(t, out var boleto1);
+            bool viaje1 = colectivo.PagarCon(tarjeta, out var boleto1);
             Assert.IsTrue(viaje1);
-            Assert.AreEqual(1420, t.Saldo);
+            Assert.AreEqual(1420, tarjeta.Saldo);
             Assert.AreEqual(1420, boleto1!.SaldoRestante);
 
             // Viaje 2 (viaje plus 1, pasa a negativo): 1420 - 1580 = -160
-            bool viaje2 = colectivo.PagarCon(t, out var boleto2);
+            bool viaje2 = colectivo.PagarCon(tarjeta, out var boleto2);
             Assert.IsTrue(viaje2);
-            Assert.AreEqual(-160, t.Saldo);
+            Assert.AreEqual(-160, tarjeta.Saldo);
             Assert.AreEqual(-160, boleto2!.SaldoRestante);
 
             // Viaje 3 (viaje plus 2, acumula saldo negativo): -160 - 1580 = -1740 (>= -2000)
-            bool viaje3 = colectivo.PagarCon(t, out var boleto3);
+            bool viaje3 = colectivo.PagarCon(tarjeta, out var boleto3);
             Assert.IsTrue(viaje3);
-            Assert.AreEqual(-1740, t.Saldo);
+            Assert.AreEqual(-1740, tarjeta.Saldo);
             Assert.AreEqual(-1740, boleto3!.SaldoRestante);
 
             // Viaje 4: superaría el límite de -2000 (-1740 - 1580 = -3320) -> no se permite
-            bool viaje4 = colectivo.PagarCon(t, out var boleto4);
+            bool viaje4 = colectivo.PagarCon(tarjeta, out var boleto4);
             Assert.IsFalse(viaje4);
             Assert.IsNull(boleto4);
-            Assert.AreEqual(-1740, t.Saldo);
+            Assert.AreEqual(-1740, tarjeta.Saldo);
         }
 
         [Test]
         public void Cargar_ConSaldoNegativo_DescuentaLoConsumidoCorrectamente()
         {
-            var t = new Tarjeta();
-            t.Cargar(3000);
+            var tarjeta = new Tarjeta();
+            tarjeta.Cargar(3000);
             var colectivo = new Colectivo();
 
-            colectivo.PagarCon(t, out _); // Saldo: 1420
-            colectivo.PagarCon(t, out _); // Saldo: -160
-            colectivo.PagarCon(t, out _); // Saldo: -1740
+            colectivo.PagarCon(tarjeta, out _); // Saldo: 1420
+            colectivo.PagarCon(tarjeta, out _); // Saldo: -160
+            colectivo.PagarCon(tarjeta, out _); // Saldo: -1740
 
             // Al recargar 2000, se descuenta la deuda consumida: -1740 + 2000 = 260
-            t.Cargar(2000);
-            Assert.AreEqual(260, t.Saldo);
+            tarjeta.Cargar(2000);
+            Assert.AreEqual(260, tarjeta.Saldo);
         }
 
         [Test]
         public void Cargar_DesdeSaldoNegativo_RespetaLimiteSuperiorDe40000()
         {
-            var t = new Tarjeta();
-            t.Descontar(1000); // Saldo: -1000
-            Assert.AreEqual(-1000, t.Saldo);
+            var tarjeta = new Tarjeta();
+            tarjeta.Descontar(1000); // Saldo: -1000
+            Assert.AreEqual(-1000, tarjeta.Saldo);
 
-            t.Cargar(30000); // Saldo: -1000 + 30000 = 29000
-            Assert.AreEqual(29000, t.Saldo);
+            tarjeta.Cargar(30000); // Saldo: -1000 + 30000 = 29000
+            Assert.AreEqual(29000, tarjeta.Saldo);
 
             // Cargar 15000 superaría el límite máximo (29000 + 15000 = 44000 > 40000)
-            Assert.Throws<LimiteSaldoExcedidoException>(() => t.Cargar(15000));
-            Assert.AreEqual(29000, t.Saldo);
+            Assert.Throws<LimiteSaldoExcedidoException>(() => tarjeta.Cargar(15000));
+            Assert.AreEqual(29000, tarjeta.Saldo);
         }
     }
 }
