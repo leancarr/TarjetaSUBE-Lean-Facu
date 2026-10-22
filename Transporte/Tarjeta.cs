@@ -13,6 +13,7 @@ namespace Transporte
 
         private readonly decimal[] montosAceptados = new decimal[] { 2000, 3000, 4000, 5000, 8000, 10000, 15000, 20000, 25000, 30000 };
         private const decimal LimiteSaldo = 40000;
+        public const decimal LimiteNegativo = -2000;
 
         public void Cargar(decimal monto)
         {
@@ -29,13 +30,13 @@ namespace Transporte
             Saldo += monto;
         }
 
-        public void Debitar(decimal monto)
+        public bool PuedeDescontar(decimal monto)
         {
-            if (Saldo < monto)
-            {
-                throw new SaldoInsuficienteException("Saldo insuficiente para realizar el pago.");
-            }
+            return (Saldo - monto) >= LimiteNegativo;
+        }
 
+        public void Descontar(decimal monto)
+        {
             Saldo -= monto;
         }
     }

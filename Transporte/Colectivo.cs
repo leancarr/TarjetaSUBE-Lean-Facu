@@ -22,21 +22,27 @@ namespace Transporte
             Linea = linea;
         }
 
-        public Boleto PagarCon(Tarjeta tarjeta)
+        public bool PagarCon(Tarjeta tarjeta, out Boleto? boleto)
         {
             if (tarjeta == null)
             {
                 throw new ArgumentNullException(nameof(tarjeta));
             }
 
-            tarjeta.Debitar(TarifaBasica);
+            if (!tarjeta.PuedeDescontar(TarifaBasica))
+            {
+                boleto = null;
+                return false;
+            }
 
-            return new Boleto(TarifaBasica, tarjeta.Saldo, tarjeta, this);
+            tarjeta.Descontar(TarifaBasica);
+            boleto = new Boleto(TarifaBasica, tarjeta.Saldo, tarjeta, this);
+            return true;
         }
 
-        public Boleto pagarCon(Tarjeta tarjeta)
+        public bool pagarCon(Tarjeta tarjeta, out Boleto? boleto)
         {
-            return PagarCon(tarjeta);
+            return PagarCon(tarjeta, out boleto);
         }
     }
 }
