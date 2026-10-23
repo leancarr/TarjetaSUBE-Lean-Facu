@@ -40,15 +40,16 @@ namespace Transporte.Tests
         }
 
         [Test]
-        public void PagarCon_SaldoSuficiente_GeneraBoleto()
+        public void PagarCon_SaldoSuficiente_GeneraBoletoYDevuelveTrue()
         {
             var tarjeta = new Tarjeta();
             tarjeta.Cargar(2000);
 
-            var boleto = colectivo.PagarCon(tarjeta);
+            bool resultado = colectivo.PagarCon(tarjeta, out var boleto);
 
+            Assert.IsTrue(resultado);
             Assert.IsNotNull(boleto);
-            Assert.AreEqual(Colectivo.TarifaBasica, boleto.Monto);
+            Assert.AreEqual(Colectivo.TarifaBasica, boleto!.Monto);
             Assert.AreEqual(420, boleto.SaldoRestante);
             Assert.AreEqual(420, tarjeta.Saldo);
             Assert.AreEqual(tarjeta, boleto.Tarjeta);
@@ -57,20 +58,24 @@ namespace Transporte.Tests
         }
 
         [Test]
-        public void PagarCon_SaldoInsuficiente_LanzaExcepcionYNoModificaSaldo()
+        public void PagarCon_SinSaldoSuficienteNiCreditoNegativo_DevuelveFalse()
         {
-            var tarjeta = new Tarjeta();
-            tarjeta.Cargar(2000);
-            colectivo.PagarCon(tarjeta); // Saldo queda en 420
+            var tarjeta = new Tarjeta(); // Saldo = 0
+            // El primer viaje se permite consumiendo saldo negativo (viaje plus)
+            colectivo.PagarCon(tarjeta, out _);
 
-            Assert.Throws<SaldoInsuficienteException>(() => colectivo.PagarCon(tarjeta));
-            Assert.AreEqual(420, tarjeta.Saldo);
+            // El segundo viaje excede el límite de -2000 (-1580 - 1580 = -3160)
+            bool resultado = colectivo.PagarCon(tarjeta, out var boleto);
+
+            Assert.IsFalse(resultado);
+            Assert.IsNull(boleto);
+            Assert.AreEqual(-1580, tarjeta.Saldo);
         }
 
         [Test]
         public void PagarCon_TarjetaNula_LanzaArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => colectivo.PagarCon(null!));
+            Assert.Throws<ArgumentNullException>(() => colectivo.PagarCon(null!, out var boleto));
         }
 
         [Test]
@@ -79,10 +84,11 @@ namespace Transporte.Tests
             var tarjeta = new Tarjeta();
             tarjeta.Cargar(3000);
 
-            var boleto = colectivo.pagarCon(tarjeta);
+            bool resultado = colectivo.pagarCon(tarjeta, out var boleto);
 
+            Assert.IsTrue(resultado);
             Assert.IsNotNull(boleto);
-            Assert.AreEqual(1580, boleto.Monto);
+            Assert.AreEqual(1580, boleto!.Monto);
             Assert.AreEqual(1420, tarjeta.Saldo);
         }
     }
