@@ -25,10 +25,10 @@ namespace Transporte
                 .HasForeignKey(t => t.TarjetaTipoId);
 
             modelBuilder.Entity<TarjetaTipo>().HasData(
-                new TarjetaTipo(1, "Normal", 0m),
-                new TarjetaTipo(2, "Medio boleto estudiantil", 0.5m),
-                new TarjetaTipo(3, "Boleto gratuito estudiantil", 1.0m),
-                new TarjetaTipo(4, "Franquicia completa", 1.0m)
+                TiposDeTarjeta.Normal,
+                TiposDeTarjeta.MedioBoleto,
+                TiposDeTarjeta.BoletoGratuito,
+                TiposDeTarjeta.FranquiciaCompleta
             );
 
             modelBuilder.Entity<Boleto>()
