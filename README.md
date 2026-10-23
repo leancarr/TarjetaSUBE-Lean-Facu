@@ -75,3 +75,34 @@ Crear la clase `TarjetaTipo` y relacionarla con `Tarjeta` mediante una clave for
 - [x] Para esta iteración considerar simplemente que cuando se paga con una tarjeta del tipo MedioBoleto el costo del pasaje vale la mitad, independientemente de cuántas veces se use y qué día de la semana sea.
 - [x] Escribir un test que valide que una tarjeta de FranquiciaCompleta siempre puede pagar un boleto.
 - [x] Escribir un test que valide que el monto del boleto pagado con medio boleto es siempre la mitad del normal.
+
+---
+
+## Iteración 3
+
+Al igual que la iteración anterior, se pide mantener la mecánica de trabajo para ir añadiendo las nuevas funcionalidades y/o modificaciones (issue, una rama específica para cada tarea y finalmente el merge cuando todo funcione correctamente..., etc.)
+
+En esta iteración daremos una introducción a la manipulación de fechas y horarios. Éstos serán necesarios en esta oportunidad para realizar las modificaciones pedidas.
+
+### Tareas / Issues de la Iteración:
+1. **Más datos sobre el boleto** (`feature/boleto-datos`):
+   - La clase `Boleto` tendrá métodos/propiedades para conocer: Fecha, tipo de tarjeta, línea de colectivo, total abonado, saldo restante e ID de la tarjeta.
+   - Informar si la transacción fue un viaje plus (`EsViajePlus`).
+   - Desacople de la hora del sistema mediante `IProveedorDeFecha`.
+2. **Refactor: reglas de viaje** (`refactor/reglas-de-viaje`):
+   - Mover la lógica de validación y cálculo de cobro en `Colectivo.PagarCon` hacia reglas independientes (`IReglaDeViaje` y `ContextoDeViaje`).
+3. **Limitación en el pago de medio boletos** (`feature/medio-boleto-limites`):
+   - Mínimo 5 minutos entre viajes consecutivos con la misma tarjeta medio boleto.
+   - Hasta 2 viajes por día con medio boleto; a partir del tercero se cobra tarifa normal.
+4. **Limitación en el pago de franquicias completas** (`feature/gratuito-limites`):
+   - Hasta 2 viajes gratuitos por día para Boleto Educativo Gratuito.
+5. **Saldo de la tarjeta** (`feature/saldo-maximo`):
+   - Límite máximo de saldo de $56000. El saldo excedente queda como pendiente de acreditación (`AcreditarCarga`).
+6. **Cierre de Iteración 3** (`feature/cierre-iteracion3`):
+   - Tests de integración de punta a punta y verificación de cobertura de métodos públicos.
+
+### Supuestos y decisiones
+- **Manejo de fechas y horarios:** Se introduce la abstracción `IProveedorDeFecha` (`ProveedorDeFechaSistema` y `ProveedorDeFechaFalso`). Se prohíbe el uso de `DateTime.Now` directo en la lógica de dominio para permitir testing temporal determinístico.
+- **Datos inmutables en Boleto:** El `Boleto` funciona como comprobante histórico congelado al momento del pago (`Fecha`, `TipoTarjeta`, `Linea`, `TotalAbonado`, `SaldoRestante`, `TarjetaId`).
+- **Total abonado y saldo negativo:** `TotalAbonado` refleja lo efectivamente descontado de la tarjeta en ese viaje. En caso de quedar con saldo negativo, se marca `EsViajePlus = true`.
+
