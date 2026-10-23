@@ -12,14 +12,20 @@ namespace Transporte
 
         public int Id { get; set; }
         public string Linea { get; set; } = string.Empty;
+        private readonly IProveedorDeFecha reloj;
 
-        public Colectivo()
+        public Colectivo() : this(string.Empty, new ProveedorDeFechaSistema())
         {
         }
 
-        public Colectivo(string linea)
+        public Colectivo(string linea) : this(linea, new ProveedorDeFechaSistema())
+        {
+        }
+
+        public Colectivo(string linea, IProveedorDeFecha reloj)
         {
             Linea = linea;
+            this.reloj = reloj ?? throw new ArgumentNullException(nameof(reloj));
         }
 
         public bool PagarCon(Tarjeta tarjeta, out Boleto? boleto)
@@ -39,7 +45,8 @@ namespace Transporte
             }
 
             tarjeta.Descontar(montoAPagar);
-            boleto = new Boleto(montoAPagar, tarjeta.Saldo, tarjeta, this);
+            string tipoTarjeta = tarjeta.TarjetaTipo?.Nombre ?? "Normal";
+            boleto = new Boleto(reloj.Ahora, tipoTarjeta, Linea, montoAPagar, tarjeta.Saldo, tarjeta.Id, tarjeta, this);
             return true;
         }
 
