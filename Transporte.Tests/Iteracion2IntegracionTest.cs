@@ -7,10 +7,12 @@ namespace Transporte.Tests
         [Test]
         public void Integracion_MedioBoleto_ConsumeHastaNegativoRecargaYVuelveAPagar()
         {
+            // En la iteración 2 el medio boleto no poseía restricciones de intervalo ni tope diario
+            var tipoIteracion2 = new TarjetaTipo(2, "Medio boleto estudiantil", 0.5m, 0, null);
             var tarjeta = new Tarjeta
             {
                 TarjetaTipoId = 2,
-                TarjetaTipo = TiposDePrueba.MedioBoleto
+                TarjetaTipo = tipoIteracion2
             };
             tarjeta.Cargar(2000);
             var colectivo = new Colectivo("Linea K");
