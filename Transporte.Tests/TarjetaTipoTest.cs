@@ -11,22 +11,28 @@ namespace Transporte.Tests
             {
                 Id = 10,
                 Nombre = "Especial",
-                PorcentajeDescuento = 0.25m
+                PorcentajeDescuento = 0.25m,
+                MinutosEntreViajes = 10,
+                MaxViajesConBeneficioPorDia = 4
             };
 
             Assert.AreEqual(10, tipo.Id);
             Assert.AreEqual("Especial", tipo.Nombre);
             Assert.AreEqual(0.25m, tipo.PorcentajeDescuento);
+            Assert.AreEqual(10, tipo.MinutosEntreViajes);
+            Assert.AreEqual(4, tipo.MaxViajesConBeneficioPorDia);
         }
 
         [Test]
         public void Constructor_ConParametros_InicializaPropiedades()
         {
-            var tipo = new TarjetaTipo(2, "Medio boleto estudiantil", 0.5m);
+            var tipo = new TarjetaTipo(2, "Medio boleto estudiantil", 0.5m, 5, 2);
 
             Assert.AreEqual(2, tipo.Id);
             Assert.AreEqual("Medio boleto estudiantil", tipo.Nombre);
             Assert.AreEqual(0.5m, tipo.PorcentajeDescuento);
+            Assert.AreEqual(5, tipo.MinutosEntreViajes);
+            Assert.AreEqual(2, tipo.MaxViajesConBeneficioPorDia);
         }
 
         [Test]
@@ -38,6 +44,8 @@ namespace Transporte.Tests
             Assert.IsNotNull(tarjeta.TarjetaTipo);
             Assert.AreEqual("Normal", tarjeta.TarjetaTipo.Nombre);
             Assert.AreEqual(0m, tarjeta.TarjetaTipo.PorcentajeDescuento);
+            Assert.AreEqual(0, tarjeta.TarjetaTipo.MinutosEntreViajes);
+            Assert.IsNull(tarjeta.TarjetaTipo.MaxViajesConBeneficioPorDia);
         }
 
         [Test]
@@ -52,6 +60,8 @@ namespace Transporte.Tests
             Assert.AreEqual(2, tarjeta.TarjetaTipoId);
             Assert.AreEqual("Medio boleto estudiantil", tarjeta.TarjetaTipo.Nombre);
             Assert.AreEqual(0.5m, tarjeta.TarjetaTipo.PorcentajeDescuento);
+            Assert.AreEqual(5, tarjeta.TarjetaTipo.MinutosEntreViajes);
+            Assert.AreEqual(2, tarjeta.TarjetaTipo.MaxViajesConBeneficioPorDia);
         }
 
         [Test]
@@ -96,15 +106,17 @@ namespace Transporte.Tests
         public void PagarCon_MedioBoleto_MontoEsSiempreLaMitadDelNormal()
         {
             var tarjetaNormal = new Tarjeta { TarjetaTipoId = 1, TarjetaTipo = TiposDePrueba.Normal };
-            var tarjetaMedio = new Tarjeta { TarjetaTipoId = 2, TarjetaTipo = TiposDePrueba.MedioBoleto };
+            var tarjetaMedio1 = new Tarjeta { TarjetaTipoId = 2, TarjetaTipo = TiposDePrueba.MedioBoleto };
+            var tarjetaMedio2 = new Tarjeta { TarjetaTipoId = 2, TarjetaTipo = TiposDePrueba.MedioBoleto };
             tarjetaNormal.Cargar(5000);
-            tarjetaMedio.Cargar(5000);
+            tarjetaMedio1.Cargar(5000);
+            tarjetaMedio2.Cargar(5000);
 
             var colectivo = new Colectivo("Linea 122");
 
             bool okNormal = colectivo.PagarCon(tarjetaNormal, out var boletoNormal);
-            bool okMedio1 = colectivo.PagarCon(tarjetaMedio, out var boletoMedio1);
-            bool okMedio2 = colectivo.PagarCon(tarjetaMedio, out var boletoMedio2);
+            bool okMedio1 = colectivo.PagarCon(tarjetaMedio1, out var boletoMedio1);
+            bool okMedio2 = colectivo.PagarCon(tarjetaMedio2, out var boletoMedio2);
 
             Assert.IsTrue(okNormal);
             Assert.IsTrue(okMedio1);
@@ -112,7 +124,8 @@ namespace Transporte.Tests
             Assert.AreEqual(Colectivo.TarifaBasica / 2m, boletoMedio1!.Monto);
             Assert.AreEqual(boletoNormal!.Monto / 2m, boletoMedio1.Monto);
             Assert.AreEqual(boletoNormal.Monto / 2m, boletoMedio2!.Monto);
-            Assert.AreEqual(5000 - Colectivo.TarifaBasica, tarjetaMedio.Saldo);
+            Assert.AreEqual(5000 - (Colectivo.TarifaBasica / 2m), tarjetaMedio1.Saldo);
+            Assert.AreEqual(5000 - (Colectivo.TarifaBasica / 2m), tarjetaMedio2.Saldo);
         }
     }
 }
