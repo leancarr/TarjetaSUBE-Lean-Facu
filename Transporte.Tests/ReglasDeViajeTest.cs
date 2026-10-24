@@ -257,5 +257,96 @@ namespace Transporte.Tests
             Assert.AreEqual(790m, b4!.TotalAbonado);
             Assert.AreEqual(8420m - 1580m - 790m, tarjeta.Saldo);
         }
+
+        [Test]
+        public void Colectivo_BoletoGratuito_MaximoDosViajesGratisPorDia_TerceroTarifaCompletaYSiguienteDiaReinicia()
+        {
+            var reloj = new ProveedorDeFechaFalso(new DateTime(2026, 10, 12, 8, 0, 0)); // Lunes 8:00 AM (entre 6 y 22)
+            var colectivo = new Colectivo("Linea 115", reloj);
+            var tarjeta = new Tarjeta { TarjetaTipo = TiposDeTarjeta.BoletoGratuito };
+            tarjeta.Cargar(5000);
+
+            // 1er viaje: gratis
+            bool ok1 = colectivo.PagarCon(tarjeta, out var b1);
+            Assert.IsTrue(ok1);
+            Assert.AreEqual(0m, b1!.TotalAbonado);
+            Assert.AreEqual(5000m, tarjeta.Saldo);
+
+            // 2do viaje (mismo día): gratis (no tiene restricción de minutos entre viajes)
+            reloj.Avanzar(TimeSpan.FromMinutes(2));
+            bool ok2 = colectivo.PagarCon(tarjeta, out var b2);
+            Assert.IsTrue(ok2);
+            Assert.AreEqual(0m, b2!.TotalAbonado);
+            Assert.AreEqual(5000m, tarjeta.Saldo);
+
+            // 3er viaje (mismo día): se cobra con el precio completo y se descuenta del saldo
+            reloj.Avanzar(TimeSpan.FromMinutes(2));
+            bool ok3 = colectivo.PagarCon(tarjeta, out var b3);
+            Assert.IsTrue(ok3);
+            Assert.AreEqual(Colectivo.TarifaBasica, b3!.TotalAbonado);
+            Assert.AreEqual(5000m - Colectivo.TarifaBasica, tarjeta.Saldo);
+
+            // 4to viaje (al día siguiente, martes 08:00 AM): vuelven los 2 viajes gratis
+            reloj.Avanzar(TimeSpan.FromHours(23).Add(TimeSpan.FromMinutes(56)));
+            Assert.AreEqual(DayOfWeek.Tuesday, reloj.Ahora.DayOfWeek);
+            Assert.AreEqual(8, reloj.Ahora.Hour);
+
+            bool ok4 = colectivo.PagarCon(tarjeta, out var b4);
+            Assert.IsTrue(ok4);
+            Assert.AreEqual(0m, b4!.TotalAbonado);
+            Assert.AreEqual(5000m - Colectivo.TarifaBasica, tarjeta.Saldo);
+        }
+
+        [Test]
+        public void Colectivo_FranquiciaCompleta_SigueSiendoGratisSinTope_CincoViajesSeguidos()
+        {
+            var reloj = new ProveedorDeFechaFalso(new DateTime(2026, 10, 12, 9, 0, 0));
+            var colectivo = new Colectivo("Linea K", reloj);
+            var tarjeta = new Tarjeta { TarjetaTipo = TiposDeTarjeta.FranquiciaCompleta };
+            // Sin saldo cargado (Saldo = 0)
+
+            for (int i = 1; i <= 5; i++)
+            {
+                bool ok = colectivo.PagarCon(tarjeta, out var boleto);
+                Assert.IsTrue(ok, $"El viaje {i} debió ser aceptado");
+                Assert.IsNotNull(boleto);
+                Assert.AreEqual(0m, boleto!.TotalAbonado);
+                Assert.AreEqual(0m, tarjeta.Saldo);
+                reloj.Avanzar(TimeSpan.FromMinutes(1));
+            }
+
+            Assert.AreEqual(5, tarjeta.Boletos.Count);
+        }
+
+        [Test]
+        public void Colectivo_BoletoGratuito_TercerViajeSinSaldoSuficiente_DevuelveFalseYNoGeneraBoleto()
+        {
+            var reloj = new ProveedorDeFechaFalso(new DateTime(2026, 10, 12, 10, 0, 0));
+            var colectivo = new Colectivo("Linea 115", reloj);
+            var tarjeta = new Tarjeta { TarjetaTipo = TiposDeTarjeta.BoletoGratuito };
+            // Tarjeta al límite negativo exacto (-2000)
+            tarjeta.Descontar(2000);
+            Assert.AreEqual(-2000m, tarjeta.Saldo);
+
+            // 1er viaje: gratis (costo 0, no consume saldo)
+            Assert.IsTrue(colectivo.PagarCon(tarjeta, out var b1));
+            Assert.AreEqual(0m, b1!.TotalAbonado);
+            Assert.AreEqual(-2000m, tarjeta.Saldo);
+
+            // 2do viaje: gratis (costo 0, no consume saldo)
+            Assert.IsTrue(colectivo.PagarCon(tarjeta, out var b2));
+            Assert.AreEqual(0m, b2!.TotalAbonado);
+            Assert.AreEqual(-2000m, tarjeta.Saldo);
+
+            // 3er viaje: tarifa completa ($1580). Saldo actual: -2000.
+            // -2000 - 1580 = -3580 < -2000 (excede el límite negativo permitido)
+            // No puede descontar -> devuelve false, boleto nulo, saldo intacto
+            bool ok3 = colectivo.PagarCon(tarjeta, out var b3);
+
+            Assert.IsFalse(ok3);
+            Assert.IsNull(b3);
+            Assert.AreEqual(-2000m, tarjeta.Saldo);
+            Assert.AreEqual(2, tarjeta.Boletos.Count);
+        }
     }
 }
