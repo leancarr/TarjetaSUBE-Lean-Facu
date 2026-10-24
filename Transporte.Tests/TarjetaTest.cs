@@ -16,6 +16,7 @@ namespace Transporte.Tests
         public void SaldoInicial_EsCero()
         {
             Assert.AreEqual(0, tarjeta.Saldo);
+            Assert.AreEqual(0, tarjeta.SaldoPendiente);
         }
 
         [Test]
@@ -39,6 +40,7 @@ namespace Transporte.Tests
         {
             tarjeta.Cargar(monto);
             Assert.AreEqual(monto, tarjeta.Saldo);
+            Assert.AreEqual(0, tarjeta.SaldoPendiente);
         }
 
         [Test]
@@ -48,18 +50,62 @@ namespace Transporte.Tests
         }
 
         [Test]
-        public void Cargar_ExcedeLimiteSaldo_LanzaExcepcion()
+        public void Cargar_SuperaSaldoMaximo_DejaSaldoEn56000YExcedenteEnSaldoPendiente()
         {
             tarjeta.Cargar(30000);
-            Assert.Throws<LimiteSaldoExcedidoException>(() => tarjeta.Cargar(15000));
+            tarjeta.Cargar(20000); // Saldo: 50000, Pendiente: 0
+            tarjeta.Cargar(10000); // Carga de 10000: entran 6000 a Saldo, 4000 quedan pendientes
+
+            Assert.AreEqual(56000m, tarjeta.Saldo);
+            Assert.AreEqual(4000m, tarjeta.SaldoPendiente);
         }
 
         [Test]
-        public void Cargar_LlegaJustoAlLimite_ActualizaSaldo()
+        public void Cargar_DosCargasSeguidas_AcumulanSaldoPendiente()
         {
+            tarjeta.Cargar(30000);
             tarjeta.Cargar(20000);
+            tarjeta.Cargar(10000); // Saldo: 56000, Pendiente: 4000
+            Assert.AreEqual(56000m, tarjeta.Saldo);
+            Assert.AreEqual(4000m, tarjeta.SaldoPendiente);
+
+            tarjeta.Cargar(15000); // 4000 + 15000 = 19000 pendiente
+            Assert.AreEqual(56000m, tarjeta.Saldo);
+            Assert.AreEqual(19000m, tarjeta.SaldoPendiente);
+        }
+
+        [Test]
+        public void PagarCon_ConSaldoPendiente_DescuentaYReacreditaHastaMaximo()
+        {
+            var colectivo = new Colectivo("Linea 122");
+            tarjeta.Cargar(30000);
             tarjeta.Cargar(20000);
-            Assert.AreEqual(40000, tarjeta.Saldo);
+            tarjeta.Cargar(10000); // Saldo: 56000, Pendiente: 4000
+
+            bool viaje = colectivo.PagarCon(tarjeta, out var boleto);
+
+            Assert.IsTrue(viaje);
+            Assert.IsNotNull(boleto);
+            Assert.AreEqual(Colectivo.TarifaBasica, boleto!.TotalAbonado);
+            Assert.AreEqual(56000m, tarjeta.Saldo);
+            Assert.AreEqual(4000m - Colectivo.TarifaBasica, tarjeta.SaldoPendiente);
+        }
+
+        [Test]
+        public void Descontar_PendienteMenorAlHueco_AcreditaTodoElPendiente()
+        {
+            tarjeta.Cargar(30000);
+            tarjeta.Cargar(25000); // Saldo: 55000
+            tarjeta.Cargar(2000);  // Entra 1000 a Saldo (56000), 1000 queda en Pendiente
+            Assert.AreEqual(56000m, tarjeta.Saldo);
+            Assert.AreEqual(1000m, tarjeta.SaldoPendiente);
+
+            // Descontamos 3000 directamente: Saldo baja a 53000, hueco disponible = 3000.
+            // Como el pendiente es 1000 (< 3000), se acredita todo el pendiente (1000) -> Saldo = 54000, Pendiente = 0
+            tarjeta.Descontar(3000);
+
+            Assert.AreEqual(54000m, tarjeta.Saldo);
+            Assert.AreEqual(0m, tarjeta.SaldoPendiente);
         }
 
         [Test]
@@ -153,21 +199,23 @@ namespace Transporte.Tests
             // Al recargar 2000, se descuenta la deuda consumida: -1740 + 2000 = 260
             tarjeta.Cargar(2000);
             Assert.AreEqual(260, tarjeta.Saldo);
+            Assert.AreEqual(0, tarjeta.SaldoPendiente);
         }
 
         [Test]
-        public void Cargar_DesdeSaldoNegativo_RespetaLimiteSuperiorDe40000()
+        public void Cargar_DesdeSaldoNegativo_AcreditaHastaMaximoYExcedenteQuedaPendiente()
         {
             var tarjeta = new Tarjeta();
             tarjeta.Descontar(1000); // Saldo: -1000
-            Assert.AreEqual(-1000, tarjeta.Saldo);
+            Assert.AreEqual(-1000m, tarjeta.Saldo);
 
-            tarjeta.Cargar(30000); // Saldo: -1000 + 30000 = 29000
-            Assert.AreEqual(29000, tarjeta.Saldo);
+            tarjeta.Cargar(30000); // Saldo: -1000 + 30000 = 29000, Pendiente = 0
+            Assert.AreEqual(29000m, tarjeta.Saldo);
+            Assert.AreEqual(0m, tarjeta.SaldoPendiente);
 
-            // Cargar 15000 superaría el límite máximo (29000 + 15000 = 44000 > 40000)
-            Assert.Throws<LimiteSaldoExcedidoException>(() => tarjeta.Cargar(15000));
-            Assert.AreEqual(29000, tarjeta.Saldo);
+            tarjeta.Cargar(30000); // 29000 + 30000 = 59000 -> Saldo: 56000, Pendiente: 3000
+            Assert.AreEqual(56000m, tarjeta.Saldo);
+            Assert.AreEqual(3000m, tarjeta.SaldoPendiente);
         }
     }
 }
