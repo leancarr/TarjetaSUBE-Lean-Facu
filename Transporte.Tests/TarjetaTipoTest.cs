@@ -65,6 +65,18 @@ namespace Transporte.Tests
         }
 
         [Test]
+        public void TiposDeTarjeta_BoletoGratuito_TieneTopeDeDosViajesPorDia()
+        {
+            var tipo = TiposDeTarjeta.BoletoGratuito;
+
+            Assert.AreEqual(3, tipo.Id);
+            Assert.AreEqual("Boleto gratuito estudiantil", tipo.Nombre);
+            Assert.AreEqual(1.0m, tipo.PorcentajeDescuento);
+            Assert.AreEqual(0, tipo.MinutosEntreViajes);
+            Assert.AreEqual(2, tipo.MaxViajesConBeneficioPorDia);
+        }
+
+        [Test]
         public void PagarCon_FranquiciaCompleta_SiemprePuedePagarInclusoSinSaldoOEnLimiteNegativo()
         {
             var tarjeta = new Tarjeta { TarjetaTipoId = 4, TarjetaTipo = TiposDePrueba.FranquiciaCompleta };
