@@ -9,7 +9,8 @@ namespace Transporte
             return new List<IReglaDeViaje>
             {
                 new IntervaloMinimoEntreViajesRegla(),
-                new BeneficioPorTipoDeTarjetaRegla()
+                new BeneficioPorTipoDeTarjetaRegla(),
+                new UsoFrecuenteRegla()
             };
         }
     }
