@@ -11,18 +11,20 @@ namespace Transporte
         public decimal PorcentajeDescuento { get; set; }
         public int MinutosEntreViajes { get; set; }
         public int? MaxViajesConBeneficioPorDia { get; set; }
+        public bool EsFranquicia { get; set; }
 
         public TarjetaTipo()
         {
         }
 
-        public TarjetaTipo(int id, string nombre, decimal porcentajeDescuento, int minutosEntreViajes = 0, int? maxViajesConBeneficioPorDia = null)
+        public TarjetaTipo(int id, string nombre, decimal porcentajeDescuento, int minutosEntreViajes = 0, int? maxViajesConBeneficioPorDia = null, bool esFranquicia = false)
         {
             Id = id;
             Nombre = nombre;
             PorcentajeDescuento = porcentajeDescuento;
             MinutosEntreViajes = minutosEntreViajes;
             MaxViajesConBeneficioPorDia = maxViajesConBeneficioPorDia;
+            EsFranquicia = esFranquicia;
         }
     }
 }

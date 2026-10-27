@@ -4,7 +4,7 @@ namespace Transporte
 {
     // SRP: Boleto funciona como un comprobante histórico inmutable de la transacción.
     // Almacena datos copiados del momento del viaje (fecha, tipo de tarjeta, línea,
-    // total abonado, saldo restante, tarjetaId y si fue viaje plus).
+    // total abonado, saldo restante, tarjetaId, esViajePlus y esTrasbordo).
     public class Boleto
     {
         public int Id { get; set; }
@@ -14,6 +14,7 @@ namespace Transporte
         public decimal TotalAbonado { get; private set; }
         public decimal SaldoRestante { get; private set; }
         public bool EsViajePlus { get; private set; }
+        public bool EsTrasbordo { get; private set; }
 
         public int TarjetaId { get; set; }
         public Tarjeta Tarjeta { get; set; } = null!;
@@ -29,7 +30,7 @@ namespace Transporte
         {
         }
 
-        public Boleto(DateTime fecha, string tipoTarjeta, string linea, decimal totalAbonado, decimal saldoRestante, int tarjetaId, Tarjeta tarjeta, Colectivo colectivo)
+        public Boleto(DateTime fecha, string tipoTarjeta, string linea, decimal totalAbonado, decimal saldoRestante, int tarjetaId, Tarjeta tarjeta, Colectivo colectivo, bool esTrasbordo = false)
         {
             Fecha = fecha;
             TipoTarjeta = tipoTarjeta;
@@ -40,6 +41,7 @@ namespace Transporte
             Tarjeta = tarjeta;
             Colectivo = colectivo;
             EsViajePlus = saldoRestante < 0;
+            EsTrasbordo = esTrasbordo;
         }
 
         // Constructores auxiliares para retrocompatibilidad con tests existentes
