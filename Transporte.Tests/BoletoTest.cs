@@ -99,7 +99,7 @@ namespace Transporte.Tests
         {
             var colectivo = new Colectivo("Linea 102", reloj);
             var tarjeta = new Tarjeta { Id = 50, TarjetaTipoId = 1, TarjetaTipo = TiposDePrueba.Normal };
-            // Saldo inicial es 0 -> viaje plus permitido (0 - 1580 = -1580 >= -2000)
+            tarjeta.Cargar(2000); // Con 2000: 2000 - 2150 = -150 >= -2000 (Viaje plus)
 
             bool resultado = colectivo.PagarCon(tarjeta, out var boleto);
 
@@ -109,7 +109,7 @@ namespace Transporte.Tests
             Assert.AreEqual("Normal", boleto.TipoTarjeta);
             Assert.AreEqual("Linea 102", boleto.Linea);
             Assert.AreEqual(Colectivo.TarifaBasica, boleto.TotalAbonado);
-            Assert.AreEqual(-Colectivo.TarifaBasica, boleto.SaldoRestante);
+            Assert.AreEqual(2000m - Colectivo.TarifaBasica, boleto.SaldoRestante);
             Assert.AreEqual(50, boleto.TarjetaId);
             Assert.IsTrue(boleto.EsViajePlus);
         }
@@ -121,14 +121,14 @@ namespace Transporte.Tests
             var colectivo = new Colectivo("Linea K");
             var fecha = new DateTime(2026, 10, 15, 14, 30, 0);
 
-            var boleto = new Boleto(fecha, "Normal", "Linea K", 1580m, 3420m, 99, tarjeta, colectivo);
+            var boleto = new Boleto(fecha, "Normal", "Linea K", Colectivo.TarifaBasica, 3420m, 99, tarjeta, colectivo);
 
             Assert.AreEqual(fecha, boleto.Fecha);
             Assert.AreEqual(fecha, boleto.FechaHora);
             Assert.AreEqual("Normal", boleto.TipoTarjeta);
             Assert.AreEqual("Linea K", boleto.Linea);
-            Assert.AreEqual(1580m, boleto.TotalAbonado);
-            Assert.AreEqual(1580m, boleto.Monto);
+            Assert.AreEqual(Colectivo.TarifaBasica, boleto.TotalAbonado);
+            Assert.AreEqual(Colectivo.TarifaBasica, boleto.Monto);
             Assert.AreEqual(3420m, boleto.SaldoRestante);
             Assert.AreEqual(99, boleto.TarjetaId);
             Assert.AreEqual(tarjeta, boleto.Tarjeta);

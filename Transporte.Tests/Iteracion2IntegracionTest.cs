@@ -16,52 +16,40 @@ namespace Transporte.Tests
             };
             tarjeta.Cargar(2000);
             var colectivo = new Colectivo("Linea K");
-            decimal mitadTarifa = Colectivo.TarifaBasica / 2m; // 790
+            decimal mitadTarifa = Colectivo.TarifaBasica / 2m; // 1075
 
-            // Viaje 1: 2000 - 790 = 1210
+            // Viaje 1: 2000 - 1075 = 925
             Assert.IsTrue(colectivo.PagarCon(tarjeta, out var b1));
             Assert.AreEqual(mitadTarifa, b1!.Monto);
-            Assert.AreEqual(1210m, tarjeta.Saldo);
-            Assert.AreEqual(1210m, b1.SaldoRestante);
+            Assert.AreEqual(2000m - mitadTarifa, tarjeta.Saldo);
+            Assert.AreEqual(2000m - mitadTarifa, b1.SaldoRestante);
 
-            // Viaje 2: 1210 - 790 = 420
+            // Viaje 2 (entra en negativo): 925 - 1075 = -150
             Assert.IsTrue(colectivo.PagarCon(tarjeta, out var b2));
             Assert.AreEqual(mitadTarifa, b2!.Monto);
-            Assert.AreEqual(420m, tarjeta.Saldo);
-            Assert.AreEqual(420m, b2.SaldoRestante);
+            Assert.AreEqual(925m - mitadTarifa, tarjeta.Saldo);
+            Assert.AreEqual(925m - mitadTarifa, b2.SaldoRestante);
 
-            // Viaje 3 (entra en negativo): 420 - 790 = -370
+            // Viaje 3 (acumula negativo): -150 - 1075 = -1225 (>= -2000)
             Assert.IsTrue(colectivo.PagarCon(tarjeta, out var b3));
             Assert.AreEqual(mitadTarifa, b3!.Monto);
-            Assert.AreEqual(-370m, tarjeta.Saldo);
-            Assert.AreEqual(-370m, b3.SaldoRestante);
+            Assert.AreEqual(-150m - mitadTarifa, tarjeta.Saldo);
+            Assert.AreEqual(-150m - mitadTarifa, b3.SaldoRestante);
 
-            // Viaje 4 (acumula negativo): -370 - 790 = -1160
-            Assert.IsTrue(colectivo.PagarCon(tarjeta, out var b4));
-            Assert.AreEqual(mitadTarifa, b4!.Monto);
-            Assert.AreEqual(-1160m, tarjeta.Saldo);
-            Assert.AreEqual(-1160m, b4.SaldoRestante);
+            // Viaje 4: superaría el límite de -2000 (-1225 - 1075 = -2300 < -2000) -> rechazado
+            Assert.IsFalse(colectivo.PagarCon(tarjeta, out var b4));
+            Assert.IsNull(b4);
+            Assert.AreEqual(-1225m, tarjeta.Saldo);
 
-            // Viaje 5 (acumula negativo dentro del límite de -2000): -1160 - 790 = -1950
+            // Recarga de $3000: descuenta los viajes plus acumulados (-1225 + 3000 = 1775)
+            tarjeta.Cargar(3000);
+            Assert.AreEqual(1775m, tarjeta.Saldo);
+
+            // Vuelve a pagar con medio boleto: 1775 - 1075 = 700
             Assert.IsTrue(colectivo.PagarCon(tarjeta, out var b5));
             Assert.AreEqual(mitadTarifa, b5!.Monto);
-            Assert.AreEqual(-1950m, tarjeta.Saldo);
-            Assert.AreEqual(-1950m, b5.SaldoRestante);
-
-            // Viaje 6: superaría el límite de -2000 (-1950 - 790 = -2740 < -2000) -> rechazado
-            Assert.IsFalse(colectivo.PagarCon(tarjeta, out var b6));
-            Assert.IsNull(b6);
-            Assert.AreEqual(-1950m, tarjeta.Saldo);
-
-            // Recarga de $3000: descuenta los viajes plus acumulados (-1950 + 3000 = 1050)
-            tarjeta.Cargar(3000);
-            Assert.AreEqual(1050m, tarjeta.Saldo);
-
-            // Vuelve a pagar con medio boleto: 1050 - 790 = 260
-            Assert.IsTrue(colectivo.PagarCon(tarjeta, out var b7));
-            Assert.AreEqual(mitadTarifa, b7!.Monto);
-            Assert.AreEqual(260m, tarjeta.Saldo);
-            Assert.AreEqual(260m, b7.SaldoRestante);
+            Assert.AreEqual(1775m - mitadTarifa, tarjeta.Saldo);
+            Assert.AreEqual(1775m - mitadTarifa, b5.SaldoRestante);
         }
     }
 }

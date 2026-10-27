@@ -43,15 +43,15 @@ namespace Transporte.Tests
         public void PagarCon_SaldoSuficiente_GeneraBoletoYDevuelveTrue()
         {
             var tarjeta = new Tarjeta();
-            tarjeta.Cargar(2000);
+            tarjeta.Cargar(3000);
 
             bool resultado = colectivo.PagarCon(tarjeta, out var boleto);
 
             Assert.IsTrue(resultado);
             Assert.IsNotNull(boleto);
             Assert.AreEqual(Colectivo.TarifaBasica, boleto!.Monto);
-            Assert.AreEqual(420, boleto.SaldoRestante);
-            Assert.AreEqual(420, tarjeta.Saldo);
+            Assert.AreEqual(3000 - Colectivo.TarifaBasica, boleto.SaldoRestante);
+            Assert.AreEqual(3000 - Colectivo.TarifaBasica, tarjeta.Saldo);
             Assert.AreEqual(tarjeta, boleto.Tarjeta);
             Assert.AreEqual(colectivo, boleto.Colectivo);
             Assert.IsTrue((DateTime.Now - boleto.FechaHora).TotalSeconds < 5);
@@ -61,15 +61,12 @@ namespace Transporte.Tests
         public void PagarCon_SinSaldoSuficienteNiCreditoNegativo_DevuelveFalse()
         {
             var tarjeta = new Tarjeta(); // Saldo = 0
-            // El primer viaje se permite consumiendo saldo negativo (viaje plus)
-            colectivo.PagarCon(tarjeta, out _);
-
-            // El segundo viaje excede el límite de -2000 (-1580 - 1580 = -3160)
+            // Con TarifaBasica = 2150, pagar con saldo 0 superaría el límite de -2000 (0 - 2150 = -2150 < -2000)
             bool resultado = colectivo.PagarCon(tarjeta, out var boleto);
 
             Assert.IsFalse(resultado);
             Assert.IsNull(boleto);
-            Assert.AreEqual(-1580, tarjeta.Saldo);
+            Assert.AreEqual(0, tarjeta.Saldo);
         }
 
         [Test]
@@ -88,8 +85,8 @@ namespace Transporte.Tests
 
             Assert.IsTrue(resultado);
             Assert.IsNotNull(boleto);
-            Assert.AreEqual(1580, boleto!.Monto);
-            Assert.AreEqual(1420, tarjeta.Saldo);
+            Assert.AreEqual(Colectivo.TarifaBasica, boleto!.Monto);
+            Assert.AreEqual(3000 - Colectivo.TarifaBasica, tarjeta.Saldo);
         }
     }
 }
