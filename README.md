@@ -115,3 +115,28 @@ En esta iteración daremos una introducción a la manipulación de fechas y hora
 | 40 | `BeneficioPorTipoDeTarjetaRegla` | Aplica el descuento correspondiente según `TarjetaTipo` respetando el tope diario con beneficio. |
 
 
+
+
+---
+
+## Iteración 4
+
+### Tareas / Issues de la Iteración:
+1. **Actualización de tarifas** (`feature/tarifa-2150`):
+   - La tarifa básica pasa de $1580 a $2150.
+2. **Boleto de uso frecuente** (`feature/uso-frecuente`):
+   - Beneficio de descuento mensual acumulativo para tarjetas de tipo Normal:
+     - Viajes 1 al 29: Tarifa normal.
+     - Viajes 30 al 79: 20% de descuento.
+     - Viajes 80 en adelante: 25% de descuento.
+3. **Franquicias: franja horaria** (`feature/franquicia-horario`):
+   - Franja permitida para franquicias (no Normal): Lunes a viernes de 06:00 a 22:00. Fuera de ese rango no se permite viajar.
+4. **Líneas interurbanas** (`feature/lineas-interurbanas`):
+   - Implementar líneas de colectivo interurbanas con tarifa de $3000.
+5. **Trasbordos** (`feature/trasbordos`):
+   - Trasbordos sin costo entre líneas distintas dentro de 1 hora del primer boleto pagado, de lunes a sábado de 07:00 a 22:00.
+6. **Cierre de Iteración 4** (`feature/cierre-iteracion4`):
+   - Test de orden de reglas, integración E2E, README final y tag `v4.0-iteracion4`.
+
+### Supuestos y decisiones
+- **Tarifa básica:** La tarifa básica urbana se actualiza de $1580 a $2150. Con la nueva tarifa, un viaje con tarjeta en saldo 0 ya no puede debitarse en saldo negativo (0 - 2150 = -2150 < -2000), requiriendo saldo disponible previo para poder completarse.

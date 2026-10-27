@@ -10,7 +10,7 @@ namespace Transporte
     // la lista inyectable de IReglaDeViaje ordenadas por Orden.
     public class Colectivo
     {
-        public const decimal TarifaBasica = 1580;
+        public const decimal TarifaBasica = 2150;
 
         public int Id { get; set; }
         public string Linea { get; set; } = string.Empty;
