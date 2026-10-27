@@ -111,26 +111,25 @@ namespace Transporte.Tests
         [Test]
         public void PuedeDescontar_SaldoSuficiente_DevuelveTrue()
         {
-            tarjeta.Cargar(2000);
-            Assert.IsTrue(tarjeta.PuedeDescontar(1580));
+            tarjeta.Cargar(3000);
+            Assert.IsTrue(tarjeta.PuedeDescontar(Colectivo.TarifaBasica));
         }
 
         [Test]
         public void PuedeDescontar_SaldoInsuficiente_DevuelveFalse()
         {
-            tarjeta.Cargar(2000);
-            tarjeta.Descontar(1580); // Saldo queda en 420
-            // Con límite de -2000, el saldo mínimo tras descontar no puede ser menor a -2000.
-            // 420 - 2500 = -2080 < -2000, por lo que devuelve false.
-            Assert.IsFalse(tarjeta.PuedeDescontar(2500));
+            tarjeta.Cargar(3000);
+            tarjeta.Descontar(Colectivo.TarifaBasica); // Saldo queda en 850
+            // Con límite de -2000: 850 - 3000 = -2150 < -2000 -> false
+            Assert.IsFalse(tarjeta.PuedeDescontar(3000));
         }
 
         [Test]
         public void Descontar_RestaMontoDelSaldo()
         {
-            tarjeta.Cargar(2000);
-            tarjeta.Descontar(1580);
-            Assert.AreEqual(2000 - 1580, tarjeta.Saldo);
+            tarjeta.Cargar(3000);
+            tarjeta.Descontar(Colectivo.TarifaBasica);
+            Assert.AreEqual(3000 - Colectivo.TarifaBasica, tarjeta.Saldo);
         }
 
         [Test]
@@ -160,29 +159,23 @@ namespace Transporte.Tests
             tarjeta.Cargar(3000);
             var colectivo = new Colectivo();
 
-            // Viaje 1 (con saldo positivo): 3000 - 1580 = 1420
+            // Viaje 1 (con saldo positivo): 3000 - 2150 = 850
             bool viaje1 = colectivo.PagarCon(tarjeta, out var boleto1);
             Assert.IsTrue(viaje1);
-            Assert.AreEqual(1420, tarjeta.Saldo);
-            Assert.AreEqual(1420, boleto1!.SaldoRestante);
+            Assert.AreEqual(850, tarjeta.Saldo);
+            Assert.AreEqual(850, boleto1!.SaldoRestante);
 
-            // Viaje 2 (viaje plus 1, pasa a negativo): 1420 - 1580 = -160
+            // Viaje 2 (viaje plus 1, pasa a negativo): 850 - 2150 = -1300 (>= -2000)
             bool viaje2 = colectivo.PagarCon(tarjeta, out var boleto2);
             Assert.IsTrue(viaje2);
-            Assert.AreEqual(-160, tarjeta.Saldo);
-            Assert.AreEqual(-160, boleto2!.SaldoRestante);
+            Assert.AreEqual(-1300, tarjeta.Saldo);
+            Assert.AreEqual(-1300, boleto2!.SaldoRestante);
 
-            // Viaje 3 (viaje plus 2, acumula saldo negativo): -160 - 1580 = -1740 (>= -2000)
+            // Viaje 3: superaría el límite de -2000 (-1300 - 2150 = -3450) -> no se permite
             bool viaje3 = colectivo.PagarCon(tarjeta, out var boleto3);
-            Assert.IsTrue(viaje3);
-            Assert.AreEqual(-1740, tarjeta.Saldo);
-            Assert.AreEqual(-1740, boleto3!.SaldoRestante);
-
-            // Viaje 4: superaría el límite de -2000 (-1740 - 1580 = -3320) -> no se permite
-            bool viaje4 = colectivo.PagarCon(tarjeta, out var boleto4);
-            Assert.IsFalse(viaje4);
-            Assert.IsNull(boleto4);
-            Assert.AreEqual(-1740, tarjeta.Saldo);
+            Assert.IsFalse(viaje3);
+            Assert.IsNull(boleto3);
+            Assert.AreEqual(-1300, tarjeta.Saldo);
         }
 
         [Test]
@@ -192,13 +185,12 @@ namespace Transporte.Tests
             tarjeta.Cargar(3000);
             var colectivo = new Colectivo();
 
-            colectivo.PagarCon(tarjeta, out _); // Saldo: 1420
-            colectivo.PagarCon(tarjeta, out _); // Saldo: -160
-            colectivo.PagarCon(tarjeta, out _); // Saldo: -1740
+            colectivo.PagarCon(tarjeta, out _); // Saldo: 850
+            colectivo.PagarCon(tarjeta, out _); // Saldo: -1300
 
-            // Al recargar 2000, se descuenta la deuda consumida: -1740 + 2000 = 260
+            // Al recargar 2000, se descuenta la deuda consumida: -1300 + 2000 = 700
             tarjeta.Cargar(2000);
-            Assert.AreEqual(260, tarjeta.Saldo);
+            Assert.AreEqual(700, tarjeta.Saldo);
             Assert.AreEqual(0, tarjeta.SaldoPendiente);
         }
 
