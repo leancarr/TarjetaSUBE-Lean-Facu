@@ -105,4 +105,13 @@ En esta iteración daremos una introducción a la manipulación de fechas y hora
 - **Manejo de fechas y horarios:** Se introduce la abstracción `IProveedorDeFecha` (`ProveedorDeFechaSistema` y `ProveedorDeFechaFalso`). Se prohíbe el uso de `DateTime.Now` directo en la lógica de dominio para permitir testing temporal determinístico.
 - **Datos inmutables en Boleto:** El `Boleto` funciona como comprobante histórico congelado al momento del pago (`Fecha`, `TipoTarjeta`, `Linea`, `TotalAbonado`, `SaldoRestante`, `TarjetaId`).
 - **Total abonado y saldo negativo:** `TotalAbonado` refleja lo efectivamente descontado de la tarjeta en ese viaje. En caso de quedar con saldo negativo, se marca `EsViajePlus = true`.
+- **Tope diario de beneficio:** Aplica al día calendario (`.Date`). Tras alcanzar el límite de 2 viajes con beneficio en el día (Medio Boleto o Gratuito Estudiantil), los viajes posteriores se cobran con tarifa completa ($1580). Al día siguiente el beneficio se reinicia automáticamente.
+- **Saldo Máximo y Acreditación Progresiva:** Límite máximo de almacenamiento en la tarjeta de $56000. Los montos cargados que superen este valor se retienen en `SaldoPendiente` y se acreditan automáticamente tras cada uso (`Descontar`).
+
+### Tabla de Reglas de Viaje
+| Orden | Regla | Responsabilidad |
+|-------|-------|-----------------|
+| 20 | `IntervaloMinimoEntreViajesRegla` | Valida que pasen al menos 5 minutos entre viajes consecutivos si la tarjeta lo requiere. |
+| 40 | `BeneficioPorTipoDeTarjetaRegla` | Aplica el descuento correspondiente según `TarjetaTipo` respetando el tope diario con beneficio. |
+
 
