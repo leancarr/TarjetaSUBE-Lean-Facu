@@ -24,6 +24,7 @@ namespace Transporte.Tests
         public void EstacionBicicletas_ConstructoresYPropiedades()
         {
             Assert.AreEqual(2418.75m, EstacionBicicletas.TarifaDiaria);
+            Assert.AreEqual(1250m, EstacionBicicletas.MultaPorDemora);
             Assert.AreEqual(TimeSpan.FromHours(1), EstacionBicicletas.TiempoMaximoDeUso);
 
             var e1 = new EstacionBicicletas();
@@ -49,7 +50,7 @@ namespace Transporte.Tests
 
             var tarjeta = new Tarjeta { Id = 7 };
             var estacion = new EstacionBicicletas("Estación 1") { Id = 12 };
-            var retiro = new RetiroDeBici(new DateTime(2026, 10, 12, 10, 0, 0), 2418.75m, tarjeta, estacion);
+            var retiro = new RetiroDeBici(new DateTime(2026, 10, 12, 10, 0, 0), 2418.75m, tarjeta, estacion, 1250m);
 
             retiro.Id = 99;
             retiro.TarjetaId = 77;
@@ -60,6 +61,11 @@ namespace Transporte.Tests
             Assert.AreEqual(88, retiro.EstacionId);
             Assert.AreEqual(tarjeta, retiro.Tarjeta);
             Assert.AreEqual(estacion, retiro.Estacion);
+            Assert.AreEqual(1250m, retiro.MultaCobrada);
+            Assert.IsFalse(retiro.MultaSaldada);
+
+            retiro.SaldarMulta();
+            Assert.IsTrue(retiro.MultaSaldada);
 
             Assert.Throws<ArgumentNullException>(() => new RetiroDeBici(DateTime.Now, 2418.75m, null!, estacion));
             Assert.Throws<ArgumentNullException>(() => new RetiroDeBici(DateTime.Now, 2418.75m, tarjeta, null!));
@@ -78,6 +84,7 @@ namespace Transporte.Tests
             Assert.IsTrue(ok);
             Assert.IsNotNull(retiro);
             Assert.AreEqual(EstacionBicicletas.TarifaDiaria, retiro!.TarifaCobrada);
+            Assert.AreEqual(0m, retiro.MultaCobrada);
             Assert.AreEqual(5000m - EstacionBicicletas.TarifaDiaria, tarjeta.Saldo); // 2581.25
             Assert.AreEqual(reloj.Ahora, retiro.FechaRetiro);
             Assert.IsNull(retiro.FechaDevolucion);
@@ -257,7 +264,139 @@ namespace Transporte.Tests
         }
 
         [Test]
-        public void DbContext_MapeaEstacionBicicletasYRetiroDeBici()
+        public void Multas_UnaMultaAcumulada_CobraTarifaMasMultaEnProximoPago()
+        {
+            var reloj = new ProveedorDeFechaFalso(new DateTime(2026, 10, 12, 10, 0, 0));
+            var estacion = new EstacionBicicletas("Parque Independencia", reloj);
+            var tarjeta = new Tarjeta { TarjetaTipo = TiposDeTarjeta.Normal };
+            tarjeta.Cargar(10000);
+
+            // Día 1: Retiro y pago del día ($2418.75)
+            estacion.RetirarBici(tarjeta, out _);
+            Assert.AreEqual(10000m - EstacionBicicletas.TarifaDiaria, tarjeta.Saldo);
+
+            // Devolución tardía (90 min > 1 h) -> genera multa de $1250
+            reloj.Avanzar(TimeSpan.FromMinutes(90));
+            estacion.DevolverBici(tarjeta, out var r1);
+            Assert.IsTrue(r1!.TuvoDemora);
+            Assert.IsFalse(r1.MultaSaldada);
+            Assert.AreEqual(1250m, estacion.MultaPendiente(tarjeta));
+
+            // Día 2: Próximo retiro con cobro -> cobra TarifaDiaria + MultaPorDemora = 3668.75
+            reloj.Avanzar(TimeSpan.FromDays(1));
+            bool ok = estacion.RetirarBici(tarjeta, out var r2);
+
+            Assert.IsTrue(ok);
+            Assert.IsNotNull(r2);
+            Assert.AreEqual(EstacionBicicletas.TarifaDiaria, r2!.TarifaCobrada);
+            Assert.AreEqual(EstacionBicicletas.MultaPorDemora, r2.MultaCobrada);
+            Assert.IsTrue(r1.MultaSaldada, "La multa previa debe quedar marcada como saldada");
+            Assert.AreEqual(0m, estacion.MultaPendiente(tarjeta));
+            // 10000 - 2418.75 - (2418.75 + 1250) = 3912.50
+            Assert.AreEqual(10000m - EstacionBicicletas.TarifaDiaria - (EstacionBicicletas.TarifaDiaria + EstacionBicicletas.MultaPorDemora), tarjeta.Saldo);
+        }
+
+        [Test]
+        public void Multas_VariasMultasAcumuladasMismoDia_PasanDeUnDiaAOtroYSeCobranJuntas()
+        {
+            var reloj = new ProveedorDeFechaFalso(new DateTime(2026, 10, 12, 8, 0, 0));
+            var estacion = new EstacionBicicletas("Parque Independencia", reloj);
+            var tarjeta = new Tarjeta { TarjetaTipo = TiposDeTarjeta.Normal };
+            tarjeta.Cargar(15000);
+
+            // Día 1 (08:00): Retiro 1 (paga 2418.75)
+            estacion.RetirarBici(tarjeta, out _);
+            reloj.Avanzar(TimeSpan.FromMinutes(90)); // 09:30 -> demora
+            estacion.DevolverBici(tarjeta, out var r1);
+            Assert.IsTrue(r1!.TuvoDemora);
+            Assert.AreEqual(1250m, estacion.MultaPendiente(tarjeta));
+
+            // Día 1 (14:00): Retiro 2 del mismo día (gratis por pase diario)
+            reloj.Avanzar(TimeSpan.FromHours(4).Add(TimeSpan.FromMinutes(30)));
+            estacion.RetirarBici(tarjeta, out var r2);
+            Assert.AreEqual(0m, r2!.TarifaCobrada);
+            Assert.AreEqual(0m, r2.MultaCobrada, "Un 2do retiro el mismo día no cobra multas");
+
+            // Devolución tardía también (100 min) -> 2da multa acumulada
+            reloj.Avanzar(TimeSpan.FromMinutes(100));
+            estacion.DevolverBici(tarjeta, out var r2Dev);
+            Assert.IsTrue(r2Dev!.TuvoDemora);
+            Assert.AreEqual(2500m, estacion.MultaPendiente(tarjeta)); // 2 multas de 1250
+
+            // Día 2 (reloj avanza 1 día): Próximo retiro con cobro -> cobra Tarifa ($2418.75) + 2 Multas ($2500) = $4918.75
+            reloj.Avanzar(TimeSpan.FromDays(1));
+            bool ok = estacion.RetirarBici(tarjeta, out var r3);
+
+            Assert.IsTrue(ok);
+            Assert.IsNotNull(r3);
+            Assert.AreEqual(EstacionBicicletas.TarifaDiaria, r3!.TarifaCobrada);
+            Assert.AreEqual(2500m, r3.MultaCobrada);
+            Assert.AreEqual(0m, estacion.MultaPendiente(tarjeta));
+            Assert.IsTrue(r1.MultaSaldada);
+            Assert.IsTrue(r2Dev.MultaSaldada);
+            // Saldo esperado: 15000 - 2418.75 - (2418.75 + 2500) = 7662.50
+            Assert.AreEqual(15000m - EstacionBicicletas.TarifaDiaria - (EstacionBicicletas.TarifaDiaria + 2500m), tarjeta.Saldo);
+        }
+
+        [Test]
+        public void Multas_SaldoAlcanzaParaTarifaPeroNoParaTarifaMasMultas_RechazaYMultasSiguenPendientes()
+        {
+            var reloj = new ProveedorDeFechaFalso(new DateTime(2026, 10, 12, 10, 0, 0));
+            var estacion = new EstacionBicicletas("Parque Independencia", reloj);
+            var tarjeta = new Tarjeta { TarjetaTipo = TiposDeTarjeta.Normal };
+            tarjeta.Cargar(5000);
+
+            // Día 1: Retiro y demora -> multa pendiente = 1250
+            estacion.RetirarBici(tarjeta, out _);
+            reloj.Avanzar(TimeSpan.FromMinutes(90));
+            estacion.DevolverBici(tarjeta, out var r1);
+            Assert.IsTrue(r1!.TuvoDemora);
+            Assert.AreEqual(1250m, estacion.MultaPendiente(tarjeta));
+
+            // Saldo actual: 5000 - 2418.75 = 2581.25.
+            // Para el día 2 se requiere: Tarifa (2418.75) + Multa (1250) = 3668.75.
+            // 2581.25 alcanza para la tarifa sola (2581.25 >= 2418.75), pero NO para tarifa + multa (2581.25 < 3668.75).
+            reloj.Avanzar(TimeSpan.FromDays(1));
+            decimal saldoAntes = tarjeta.Saldo;
+            bool ok = estacion.RetirarBici(tarjeta, out var r2);
+
+            Assert.IsFalse(ok, "Debe rechazar porque no alcanza para tarifa + multa");
+            Assert.IsNull(r2);
+            Assert.AreEqual(saldoAntes, tarjeta.Saldo, "Saldo debe quedar intacto");
+            Assert.IsFalse(r1.MultaSaldada, "Multa debe seguir sin saldar");
+            Assert.AreEqual(1250m, estacion.MultaPendiente(tarjeta), "Multa pendiente debe seguir intacta");
+        }
+
+        [Test]
+        public void Multas_SegundoRetiroMismoDia_NoCobraMultas_MultasSiguenPendientes()
+        {
+            var reloj = new ProveedorDeFechaFalso(new DateTime(2026, 10, 12, 10, 0, 0));
+            var estacion = new EstacionBicicletas("Parque Independencia", reloj);
+            var tarjeta = new Tarjeta { TarjetaTipo = TiposDeTarjeta.Normal };
+            tarjeta.Cargar(10000);
+
+            // Retiro 1 a las 10:00 -> paga el día
+            estacion.RetirarBici(tarjeta, out _);
+            // Devolución con demora a las 11:30 (90 min)
+            reloj.Avanzar(TimeSpan.FromMinutes(90));
+            estacion.DevolverBici(tarjeta, out _);
+            Assert.AreEqual(1250m, estacion.MultaPendiente(tarjeta));
+
+            // Retiro 2 a las 14:00 (mismo día calendario) -> el día ya está pago
+            decimal saldoAntes = tarjeta.Saldo;
+            reloj.Avanzar(TimeSpan.FromHours(2).Add(TimeSpan.FromMinutes(30)));
+            bool ok2 = estacion.RetirarBici(tarjeta, out var r2);
+
+            Assert.IsTrue(ok2);
+            Assert.IsNotNull(r2);
+            Assert.AreEqual(0m, r2!.TarifaCobrada);
+            Assert.AreEqual(0m, r2.MultaCobrada);
+            Assert.AreEqual(saldoAntes, tarjeta.Saldo, "No se descuenta saldo en retiros de día ya pago");
+            Assert.AreEqual(1250m, estacion.MultaPendiente(tarjeta), "Las multas pendientes continúan acumuladas para el próximo pago");
+        }
+
+        [Test]
+        public void DbContext_MapeaEstacionBicicletasYRetiroDeBiciConMultas()
         {
             var options = new DbContextOptionsBuilder<TransporteDbContext>()
                 .UseSqlite("DataSource=:memory:")
@@ -273,6 +412,8 @@ namespace Transporte.Tests
             Assert.IsNotNull(entityRetiro.FindProperty("FechaDevolucion"));
             Assert.IsNotNull(entityRetiro.FindProperty("TarifaCobrada"));
             Assert.IsNotNull(entityRetiro.FindProperty("TuvoDemora"));
+            Assert.IsNotNull(entityRetiro.FindProperty("MultaCobrada"));
+            Assert.IsNotNull(entityRetiro.FindProperty("MultaSaldada"));
         }
     }
 }
