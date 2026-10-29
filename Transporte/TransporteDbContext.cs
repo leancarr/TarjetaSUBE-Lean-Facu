@@ -9,6 +9,8 @@ namespace Transporte
         public DbSet<TarjetaTipo> TarjetaTipos { get; set; } = null!;
         public DbSet<Colectivo> Colectivos { get; set; } = null!;
         public DbSet<Boleto> Boletos { get; set; } = null!;
+        public DbSet<EstacionBicicletas> EstacionesBicicletas { get; set; } = null!;
+        public DbSet<RetiroDeBici> RetirosDeBici { get; set; } = null!;
 
         public TransporteDbContext(DbContextOptions<TransporteDbContext> options)
             : base(options)
@@ -45,6 +47,16 @@ namespace Transporte
                 .HasOne(b => b.Colectivo)
                 .WithMany()
                 .HasForeignKey(b => b.ColectivoId);
+
+            modelBuilder.Entity<RetiroDeBici>()
+                .HasOne(r => r.Tarjeta)
+                .WithMany(t => t.RetirosDeBici)
+                .HasForeignKey(r => r.TarjetaId);
+
+            modelBuilder.Entity<RetiroDeBici>()
+                .HasOne(r => r.Estacion)
+                .WithMany()
+                .HasForeignKey(r => r.EstacionId);
         }
     }
 }

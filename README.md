@@ -138,3 +138,26 @@ Se incorpora `TarjetaTipo` relacionada por clave foránea (`TarjetaTipoId`) con 
 | **Prompt 10** | `feature/lineas-interurbanas` (`ColectivoInterurbano` con tarifa $3000 y herencia EF) | Leandro | Facundo |
 | **Prompt 11** | `feature/trasbordos` (Trasbordos gratuitos entre líneas distintas dentro de 1 hora) | Facundo | Leandro |
 | **Prompt 12** | `feature/cierre-iteracion4` (Test de orden, integración E2E, README final y tag `v4.0-iteracion4`) | Leandro | Facundo |
+
+
+---
+
+## Iteración 5
+
+Integración con el sistema de bicicletas públicas **Mi Bici Tu Bici**.
+Los usuarios pueden retirar bicicletas públicas en estaciones pagando la tarifa de servicio mediante su tarjeta SUBE.
+
+### Tareas / Issues de la Iteración:
+1. **Mi Bici Tu Bici: estación, retiro y pago** (`feature/bici-retiro-devolucion`):
+   - Modelado de `EstacionBicicletas` y `RetiroDeBici`.
+   - Cobro de la tarifa diaria de $2418,75 (`TarifaDiaria`).
+   - Pase diario: si en el día calendario (`.Date`) ya se abonó la tarifa diaria (`TarifaCobrada > 0`), los retiros posteriores de ese mismo día no se cobran.
+   - Restricción de saldo: no se admite saldo negativo para retirar bicicletas (`TieneSaldoPara(monto)` exige `Saldo >= monto`).
+   - Límite de 1 bicicleta en curso por tarjeta a la vez.
+   - Control de tiempo máximo de uso de 1 hora (`TiempoMaximoDeUso`) y registro de mora (`TuvoDemora`).
+
+### Supuestos y Decisiones de Diseño:
+- **Tarifa plana universal:** Todas las tarjetas pagan la tarifa completa de $2418,75 sin descuentos por franquicias de transporte en colectivo (Medio Boleto, Boleto Gratuito y Franquicia Completa abonan tarifa diaria completa).
+- **Disponibilidad horaria:** El sistema de bicicletas públicas no posee restricciones de franja horaria laboral (opera las 24 horas, incluso domingos a la noche).
+- **Sin descubierto:** A diferencia del transporte en colectivo que permite descubierto de hasta -$2000, para retirar una bicicleta se exige saldo disponible previo suficiente para cubrir la tarifa (`tarjeta.TieneSaldoPara(tarifa)`).
+- **Estado de uso y demora:** Cada tarjeta solo puede poseer un retiro en curso a la vez. La devolución calcula si el tiempo transcurrido superó el límite de 1 hora (`TuvoDemora = duracion > tiempoMaximo`), marcando el estado para la posterior gestión de penalizaciones.
