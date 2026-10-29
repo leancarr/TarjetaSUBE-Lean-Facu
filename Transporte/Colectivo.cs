@@ -68,7 +68,7 @@ namespace Transporte
 
             tarjeta.Descontar(contexto.Tarifa);
             string tipoTarjeta = tarjeta.TarjetaTipo?.Nombre ?? "Normal";
-            boleto = new Boleto(contexto.Ahora, tipoTarjeta, Linea, contexto.Tarifa, tarjeta.Saldo, tarjeta.Id, tarjeta, this);
+            boleto = new Boleto(contexto.Ahora, tipoTarjeta, Linea, contexto.Tarifa, tarjeta.Saldo, tarjeta.Id, tarjeta, this, contexto.EsTrasbordo);
             tarjeta.Boletos.Add(boleto);
             return true;
         }

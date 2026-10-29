@@ -35,7 +35,7 @@ namespace Transporte
                 return 0;
             }
 
-            return c.Tarjeta.Boletos.Count(b => b.Fecha.Date == c.Ahora.Date);
+            return c.Tarjeta.Boletos.Count(b => b.Fecha.Date == c.Ahora.Date && !b.EsTrasbordo);
         }
     }
 }

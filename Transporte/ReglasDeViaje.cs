@@ -10,6 +10,7 @@ namespace Transporte
             {
                 new FranjaHorariaFranquiciaRegla(),
                 new IntervaloMinimoEntreViajesRegla(),
+                new TrasbordoRegla(),
                 new BeneficioPorTipoDeTarjetaRegla(),
                 new UsoFrecuenteRegla()
             };

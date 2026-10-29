@@ -34,6 +34,9 @@ namespace Transporte
             );
 
             modelBuilder.Entity<Boleto>()
+                .Property(b => b.EsTrasbordo);
+
+            modelBuilder.Entity<Boleto>()
                 .HasOne(b => b.Tarjeta)
                 .WithMany()
                 .HasForeignKey(b => b.TarjetaId);
