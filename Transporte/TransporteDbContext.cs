@@ -19,6 +19,8 @@ namespace Transporte
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<ColectivoInterurbano>();
+
             modelBuilder.Entity<Tarjeta>()
                 .HasOne(t => t.TarjetaTipo)
                 .WithMany()
@@ -30,6 +32,9 @@ namespace Transporte
                 TiposDeTarjeta.BoletoGratuito,
                 TiposDeTarjeta.FranquiciaCompleta
             );
+
+            modelBuilder.Entity<Boleto>()
+                .Property(b => b.EsTrasbordo);
 
             modelBuilder.Entity<Boleto>()
                 .HasOne(b => b.Tarjeta)

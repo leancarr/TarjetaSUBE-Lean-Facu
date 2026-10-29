@@ -10,7 +10,7 @@ namespace Transporte
     // la lista inyectable de IReglaDeViaje ordenadas por Orden.
     public class Colectivo
     {
-        public const decimal TarifaBasica = 1580;
+        public const decimal TarifaBasica = 2150;
 
         public int Id { get; set; }
         public string Linea { get; set; } = string.Empty;
@@ -68,7 +68,7 @@ namespace Transporte
 
             tarjeta.Descontar(contexto.Tarifa);
             string tipoTarjeta = tarjeta.TarjetaTipo?.Nombre ?? "Normal";
-            boleto = new Boleto(contexto.Ahora, tipoTarjeta, Linea, contexto.Tarifa, tarjeta.Saldo, tarjeta.Id, tarjeta, this);
+            boleto = new Boleto(contexto.Ahora, tipoTarjeta, Linea, contexto.Tarifa, tarjeta.Saldo, tarjeta.Id, tarjeta, this, contexto.EsTrasbordo);
             tarjeta.Boletos.Add(boleto);
             return true;
         }
