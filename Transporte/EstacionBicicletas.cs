@@ -5,10 +5,12 @@ using System.Linq;
 namespace Transporte
 {
     // SRP: EstacionBicicletas representa la estación del sistema Mi Bici Tu Bici,
-    // gestionando el retiro, cobro de pase diario y devolución con control de tiempo de uso.
+    // gestionando el retiro, cobro de pase diario, liquidación de multas acumuladas
+    // y devolución con control de tiempo de uso.
     public class EstacionBicicletas
     {
         public const decimal TarifaDiaria = 2418.75m;
+        public const decimal MultaPorDemora = 1250m;
         public static readonly TimeSpan TiempoMaximoDeUso = TimeSpan.FromHours(1);
 
         public int Id { get; set; }
@@ -30,6 +32,17 @@ namespace Transporte
             this.reloj = reloj ?? throw new ArgumentNullException(nameof(reloj));
         }
 
+        public decimal MultaPendiente(Tarjeta tarjeta)
+        {
+            if (tarjeta?.RetirosDeBici == null || tarjeta.RetirosDeBici.Count == 0)
+            {
+                return 0m;
+            }
+
+            int cantidadPendientes = tarjeta.RetirosDeBici.Count(r => r.TuvoDemora && !r.MultaSaldada);
+            return cantidadPendientes * MultaPorDemora;
+        }
+
         public bool RetirarBici(Tarjeta tarjeta, out RetiroDeBici? retiro)
         {
             if (tarjeta == null)
@@ -44,26 +57,46 @@ namespace Transporte
                 return false;
             }
 
-            // (b) Si hoy ya se pagó el día no se cobra; si no, corresponde cobrar TarifaDiaria
-            decimal tarifaACobrar = CorrespondeCobrarTarifa(tarjeta, reloj.Ahora) ? TarifaDiaria : 0m;
-
-            // (c) Si corresponde cobrar y !TieneSaldoPara(tarifa) -> false y nada cambia
-            if (tarifaACobrar > 0 && !tarjeta.TieneSaldoPara(tarifaACobrar))
+            // (b) Determinar si corresponde cobrar tarifa y multas acumuladas
+            if (CorrespondeCobrarTarifa(tarjeta, reloj.Ahora))
             {
-                retiro = null;
-                return false;
-            }
+                decimal tarifa = TarifaDiaria;
+                decimal multa = MultaPendiente(tarjeta);
+                decimal total = tarifa + multa;
 
-            // (d) Descontar, crear el RetiroDeBici y agregarlo al historial -> true
-            if (tarifaACobrar > 0)
+                // (c) Si no alcanza para tarifa + multas -> false y nada cambia
+                if (!tarjeta.TieneSaldoPara(total))
+                {
+                    retiro = null;
+                    return false;
+                }
+
+                // Descontar total (tarifa + multas)
+                tarjeta.Descontar(total);
+
+                // Marcar multas pendientes como saldadas
+                if (tarjeta.RetirosDeBici != null)
+                {
+                    var pendientes = tarjeta.RetirosDeBici.Where(r => r.TuvoDemora && !r.MultaSaldada).ToList();
+                    foreach (var p in pendientes)
+                    {
+                        p.SaldarMulta();
+                    }
+                }
+
+                retiro = new RetiroDeBici(reloj.Ahora, tarifa, tarjeta, this, multa);
+                tarjeta.RetirosDeBici ??= new List<RetiroDeBici>();
+                tarjeta.RetirosDeBici.Add(retiro);
+                return true;
+            }
+            else
             {
-                tarjeta.Descontar(tarifaACobrar);
+                // Si el día ya está pago, no se cobra nada y las multas siguen pendientes
+                retiro = new RetiroDeBici(reloj.Ahora, 0m, tarjeta, this, 0m);
+                tarjeta.RetirosDeBici ??= new List<RetiroDeBici>();
+                tarjeta.RetirosDeBici.Add(retiro);
+                return true;
             }
-
-            retiro = new RetiroDeBici(reloj.Ahora, tarifaACobrar, tarjeta, this);
-            tarjeta.RetirosDeBici ??= new List<RetiroDeBici>();
-            tarjeta.RetirosDeBici.Add(retiro);
-            return true;
         }
 
         public bool DevolverBici(Tarjeta tarjeta, out RetiroDeBici? retiro)

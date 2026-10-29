@@ -49,6 +49,12 @@ namespace Transporte
                 .HasForeignKey(b => b.ColectivoId);
 
             modelBuilder.Entity<RetiroDeBici>()
+                .Property(r => r.MultaCobrada);
+
+            modelBuilder.Entity<RetiroDeBici>()
+                .Property(r => r.MultaSaldada);
+
+            modelBuilder.Entity<RetiroDeBici>()
                 .HasOne(r => r.Tarjeta)
                 .WithMany(t => t.RetirosDeBici)
                 .HasForeignKey(r => r.TarjetaId);
