@@ -11,7 +11,7 @@ El siguiente trabajo es un enunciado iterativo. Regularmente se ampliará y/o mo
 
 - El trabajo está implementado en **.NET 8.0 (`net8.0`)**, usando Git para el control de versiones y NUnit como framework de testing.
 - Los tests unitarios no dependen de una base de datos real externa (se emplea SQLite en memoria para tests de mapeo EF Core).
-- **Todos** los métodos públicos y reglas de negocio están testeados con pruebas unitarias e integrales.
+- **Todos** los métodos públicos y reglas de negocio están testeados con pruebas unitarias e integrales (153 tests en verde sin fallos).
 - Cada clase de la implementación y de testing se encuentra en un archivo separado.
 
 ---
@@ -98,7 +98,7 @@ Se incorpora `TarjetaTipo` relacionada por clave foránea (`TarjetaTipoId`) con 
 6. **Cierre de Iteración 4** (`feature/cierre-iteracion4`):
    - Test que fija el orden canónico de reglas, tests de integración E2E punta a punta, documentación completa y tag `v4.0-iteracion4`.
 
-### Supuestos y Decisiones de Diseño
+### Supuestos y Decisiones de Diseño (Iteración 4)
 
 - **Tarifa básica y descubierto:** Con la tarifa urbana de $2150 y la interurbana de $3000, una tarjeta en saldo $0 no puede abonar el viaje en descubierto ($0 - $2150 = -$2150 < -$2000; $0 - $3000 = -$3000 < -$2000), requiriendo saldo previo para viajar.
 - **Pipeline de Reglas Extensible (OCP / LSP):** Las reglas de viaje implementan `IReglaDeViaje` y son ordenadas por su propiedad `Orden`. `Colectivo` y `ColectivoInterurbano` inicializan `ContextoDeViaje.Tarifa` en su `TarifaBase`, y las reglas mutan dicho contexto sin recalcular tarifas fijas, permitiendo que todas las reglas apliquen tanto a colectivos urbanos como interurbanos de manera transparente.
@@ -122,26 +122,6 @@ Se incorpora `TarjetaTipo` relacionada por clave foránea (`TarjetaTipoId`) con 
 
 ---
 
-## Trazabilidad de Tareas y Revisión Cruzada
-
-| Prompt | Tarea / Rama | Autor | Revisor |
-|:------:|--------------|:-----:|:-------:|
-| **Prompt 1** | `feature/descuento-saldos` (Descuento de saldos y `bool PagarCon`) | Facundo | Leandro |
-| **Prompt 2** | `feature/saldo-negativo` (Límite negativo -$2000 y cancelación con carga) | Leandro | Facundo |
-| **Prompt 3** | `feature/medio-boleto-limites` (Intervalo 5 min y tope 2 viajes diarios medio boleto) | Facundo | Leandro |
-| **Prompt 4** | `feature/gratuito-limites` (Tope de 2 viajes diarios para Boleto Gratuito) | Leandro | Facundo |
-| **Prompt 5** | `feature/saldo-maximo` (Saldo máximo $56000 y acreditación diferida) | Facundo | Leandro |
-| **Prompt 6** | `feature/cierre-iteracion3` (Tests de integración E2E y cierre Iteración 3) | Leandro | Facundo |
-| **Prompt 7** | `feature/tarifa-2150` (Actualización de tarifa básica urbana a $2150) | Facundo | Leandro |
-| **Prompt 8** | `feature/uso-frecuente` (Boleto de uso frecuente con descuentos de 20% y 25%) | Leandro | Facundo |
-| **Prompt 9** | `feature/franquicia-horario` (Franja horaria para franquicias de lun a vie 06-22) | Facundo | Leandro |
-| **Prompt 10** | `feature/lineas-interurbanas` (`ColectivoInterurbano` con tarifa $3000 y herencia EF) | Leandro | Facundo |
-| **Prompt 11** | `feature/trasbordos` (Trasbordos gratuitos entre líneas distintas dentro de 1 hora) | Facundo | Leandro |
-| **Prompt 12** | `feature/cierre-iteracion4` (Test de orden, integración E2E, README final y tag `v4.0-iteracion4`) | Leandro | Facundo |
-
-
----
-
 ## Iteración 5
 
 Integración con el sistema de bicicletas públicas **Mi Bici Tu Bici**.
@@ -155,9 +135,56 @@ Los usuarios pueden retirar bicicletas públicas en estaciones pagando la tarifa
    - Restricción de saldo: no se admite saldo negativo para retirar bicicletas (`TieneSaldoPara(monto)` exige `Saldo >= monto`).
    - Límite de 1 bicicleta en curso por tarjeta a la vez.
    - Control de tiempo máximo de uso de 1 hora (`TiempoMaximoDeUso`) y registro de mora (`TuvoDemora`).
+2. **Multas por demora** (`feature/bici-multas`):
+   - Multa fija de $1250 (`MultaPorDemora`) por uso mayor a 1 hora.
+   - Acumulación de multas pendientes (`MultaPendiente(tarjeta)`): retiros con demora que aún no hayan sido saldados (`TuvoDemora && !MultaSaldada`).
+   - Cobro atómico de multas acumuladas en el primer retiro que requiera pago (tarifa diaria + multas).
+   - Si el día ya está pago, los retiros posteriores de ese día no cobran multas y las mismas continúan acumuladas.
+   - Principio "todo o nada": si el saldo no alcanza para tarifa + multas, el retiro se rechaza y tanto el saldo como las multas quedan intactos.
+3. **Escenarios de prueba y aislamiento** (`feature/bici-tests`):
+   - Suite `MiBiciTuBiciEscenariosTest` cubriendo los 3 escenarios mínimos del enunciado (retiro exitoso a tiempo, rechazo por saldo insuficiente con/sin multas, cobro acumulado de multas de uno o varios usos tardíos).
+   - Pruebas de tarifa plana universal (todas las franquicias pagan tarifa completa de bici).
+   - Pruebas de aislamiento total entre Colectivos y Mi Bici Tu Bici (un retiro de bici no es un `Boleto`, no consume intervalos de 5 min ni topes diarios de 2 viajes, ni altera el conteo de Uso Frecuente).
+4. **Cierre de Iteración 5** (`feature/cierre-iteracion5`):
+   - Regresión completa de 153 tests en verde.
+   - Verificación de cobertura de todos los métodos y propiedades públicas nuevas.
+   - Actualización integral de documentación y creación del tag `v5.0-iteracion5`.
 
-### Supuestos y Decisiones de Diseño:
-- **Tarifa plana universal:** Todas las tarjetas pagan la tarifa completa de $2418,75 sin descuentos por franquicias de transporte en colectivo (Medio Boleto, Boleto Gratuito y Franquicia Completa abonan tarifa diaria completa).
+### Supuestos y Decisiones de Diseño (Iteración 5):
+- **SRP y desacoplamiento:**
+  - `Tarjeta` gestiona exclusivamente su saldo, saldos pendientes y el historial de comprobantes (`Boletos` y `RetirosDeBici`).
+  - `RetiroDeBici` es un registro inmutable de auditoría y ciclo de vida de un uso de bicicleta pública (no es un `Boleto`).
+  - `EstacionBicicletas` orquesta la transacción de retiro, control de pases diarios, liquidación de multas acumuladas y devolución con verificación de mora.
+- **DIP y desacople temporal:**
+  - `EstacionBicicletas` recibe `IProveedorDeFecha`, eliminando cualquier llamado directo a `DateTime.Now` en la lógica de negocio y permitiendo testing determinístico mediante `ProveedorDeFechaFalso`.
+- **Tarifa plana universal:** Todas las tarjetas pagan la tarifa completa de $2418,75 sin descuentos por franquicias de colectivo (Medio Boleto, Boleto Gratuito y Franquicia Completa abonan tarifa diaria completa).
 - **Disponibilidad horaria:** El sistema de bicicletas públicas no posee restricciones de franja horaria laboral (opera las 24 horas, incluso domingos a la noche).
-- **Sin descubierto:** A diferencia del transporte en colectivo que permite descubierto de hasta -$2000, para retirar una bicicleta se exige saldo disponible previo suficiente para cubrir la tarifa (`tarjeta.TieneSaldoPara(tarifa)`).
-- **Estado de uso y demora:** Cada tarjeta solo puede poseer un retiro en curso a la vez. La devolución calcula si el tiempo transcurrido superó el límite de 1 hora (`TuvoDemora = duracion > tiempoMaximo`), marcando el estado para la posterior gestión de penalizaciones.
+- **Sin descubierto:** A diferencia del transporte en colectivo que permite descubierto de hasta -$2000, para retirar una bicicleta se exige saldo disponible previo suficiente para cubrir el total (`tarjeta.TieneSaldoPara(total)`).
+- **Aislamiento completo de dominios:** Los retiros de bicicleta no interfieren con las reglas de viaje en colectivo (intervalo de 5 min, tope diario de 2 viajes gratis/medio boleto, ni uso frecuente).
+
+---
+
+## Trazabilidad de Tareas y Revisión Cruzada
+
+| Iteración | Prompt | Tarea / Rama | Autor | Revisor |
+|:---------:|:------:|--------------|:-----:|:-------:|
+| **Iteración 2** | **Prompt 1** | `feature/descuento-saldos` (Descuento de saldos y `bool PagarCon`) | Facundo | Leandro |
+| **Iteración 2** | **Prompt 2** | `feature/saldo-negativo` (Límite negativo -$2000 y cancelación con carga) | Leandro | Facundo |
+| **Iteración 2** | **Prompt 3** | `feature/franquicia-tarjeta` (TarjetaTipo, seed en DbContext y cálculo de tarifas) | Facundo | Leandro |
+| **Iteración 2** | **Prompt 4** | `feature/cierre-iteracion2` (Test de integración, README y tag `v2.0-iteracion2`) | Leandro | Facundo |
+| **Iteración 3** | **Prompt 1** | `feature/boleto-datos` (Datos inmutables en Boleto, `IProveedorDeFecha`) | Facundo | Leandro |
+| **Iteración 3** | **Prompt 2** | `refactor/reglas-de-viaje` (Motor de reglas desacoplado `IReglaDeViaje`) | Facundo | Leandro |
+| **Iteración 3** | **Prompt 3** | `feature/medio-boleto-limites` (Intervalo 5 min y tope 2 viajes diarios medio boleto) | Facundo | Leandro |
+| **Iteración 3** | **Prompt 4** | `feature/gratuito-limites` (Tope de 2 viajes diarios para Boleto Gratuito) | Leandro | Facundo |
+| **Iteración 3** | **Prompt 5** | `feature/saldo-maximo` (Saldo máximo $56000 y acreditación diferida) | Facundo | Leandro |
+| **Iteración 3** | **Prompt 6** | `feature/cierre-iteracion3` (Tests de integración E2E y cierre Iteración 3) | Leandro | Facundo |
+| **Iteración 4** | **Prompt 7** | `feature/tarifa-2150` (Actualización de tarifa básica urbana a $2150) | Facundo | Leandro |
+| **Iteración 4** | **Prompt 8** | `feature/uso-frecuente` (Boleto de uso frecuente con descuentos de 20% y 25%) | Leandro | Facundo |
+| **Iteración 4** | **Prompt 9** | `feature/franquicia-horario` (Franja horaria para franquicias de lun a vie 06-22) | Facundo | Leandro |
+| **Iteración 4** | **Prompt 10** | `feature/lineas-interurbanas` (`ColectivoInterurbano` con tarifa $3000 y herencia EF) | Leandro | Facundo |
+| **Iteración 4** | **Prompt 11** | `feature/trasbordos` (Trasbordos gratuitos entre líneas distintas dentro de 1 hora) | Facundo | Leandro |
+| **Iteración 4** | **Prompt 12** | `feature/cierre-iteracion4` (Test de orden, integración E2E, README final y tag `v4.0-iteracion4`) | Leandro | Facundo |
+| **Iteración 5** | **Prompt 13 (P1)** | `feature/bici-retiro-devolucion` (Estación, retiro, pase diario y devolución) | Facundo | Leandro |
+| **Iteración 5** | **Prompt 14 (P2)** | `feature/bici-multas` (Multa por demora $1250, acumulación y cobro al pagar) | Leandro | Facundo |
+| **Iteración 5** | **Prompt 15 (P3)** | `feature/bici-tests` (Escenarios mínimos de aceptación y aislamiento colectivo) | Facundo | Leandro |
+| **Iteración 5** | **Prompt 16 (P4)** | `feature/cierre-iteracion5` (Regresión general, cobertura, README y tag `v5.0-iteracion5`) | Leandro | Facundo |
