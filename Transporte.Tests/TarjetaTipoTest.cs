@@ -1,9 +1,12 @@
+using System;
 using NUnit.Framework;
 
 namespace Transporte.Tests
 {
     public class TarjetaTipoTest
     {
+        private readonly IProveedorDeFecha relojFijo = new ProveedorDeFechaFalso(new DateTime(2026, 10, 12, 10, 0, 0));
+
         [Test]
         public void Constructor_VacioYPropiedades_AsignanCorrectamente()
         {
@@ -80,7 +83,7 @@ namespace Transporte.Tests
         public void PagarCon_FranquiciaCompleta_SiemprePuedePagarInclusoSinSaldoOEnLimiteNegativo()
         {
             var tarjeta = new Tarjeta { TarjetaTipoId = 4, TarjetaTipo = TiposDePrueba.FranquiciaCompleta };
-            var colectivo = new Colectivo("Linea K");
+            var colectivo = new Colectivo("Linea K", relojFijo);
 
             // Con saldo 0
             bool resultadoSaldoCero = colectivo.PagarCon(tarjeta, out var boleto1);
@@ -104,7 +107,7 @@ namespace Transporte.Tests
         public void PagarCon_BoletoGratuitoEstudiantil_CostoCeroYSiemprePuedePagar()
         {
             var tarjeta = new Tarjeta { TarjetaTipoId = 3, TarjetaTipo = TiposDePrueba.BoletoGratuito };
-            var colectivo = new Colectivo("Linea 115");
+            var colectivo = new Colectivo("Linea 115", relojFijo);
 
             bool resultado = colectivo.PagarCon(tarjeta, out var boleto);
 
@@ -124,7 +127,7 @@ namespace Transporte.Tests
             tarjetaMedio1.Cargar(5000);
             tarjetaMedio2.Cargar(5000);
 
-            var colectivo = new Colectivo("Linea 122");
+            var colectivo = new Colectivo("Linea 122", relojFijo);
 
             bool okNormal = colectivo.PagarCon(tarjetaNormal, out var boletoNormal);
             bool okMedio1 = colectivo.PagarCon(tarjetaMedio1, out var boletoMedio1);
