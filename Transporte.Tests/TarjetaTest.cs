@@ -209,5 +209,26 @@ namespace Transporte.Tests
             Assert.AreEqual(56000m, tarjeta.Saldo);
             Assert.AreEqual(3000m, tarjeta.SaldoPendiente);
         }
+
+        [Test]
+        public void TieneSaldoPara_ValidaSaldoSuficienteSinDescubierto()
+        {
+            var tarjeta = new Tarjeta();
+            Assert.IsFalse(tarjeta.TieneSaldoPara(100));
+            Assert.IsTrue(tarjeta.TieneSaldoPara(0));
+
+            tarjeta.Cargar(5000);
+            Assert.IsTrue(tarjeta.TieneSaldoPara(2418.75m));
+            Assert.IsTrue(tarjeta.TieneSaldoPara(5000m));
+            Assert.IsFalse(tarjeta.TieneSaldoPara(5000.01m));
+        }
+
+        [Test]
+        public void RetirosDeBici_ColeccionInicializadaVacia()
+        {
+            var tarjeta = new Tarjeta();
+            Assert.IsNotNull(tarjeta.RetirosDeBici);
+            Assert.IsEmpty(tarjeta.RetirosDeBici);
+        }
     }
 }

@@ -5,7 +5,7 @@ using System.Linq;
 namespace Transporte
 {
     // SRP: Tarjeta gestiona exclusivamente el estado y las reglas de su saldo (cargas permitidas, límites, saldos pendientes y débitos)
-    // y mantiene la referencia a su tipo de franquicia (TarjetaTipo) y el historial de boletos emitidos.
+    // y mantiene la referencia a su tipo de franquicia (TarjetaTipo), el historial de boletos y retiros de bicicletas emitidos.
     public class Tarjeta
     {
         public int Id { get; set; }
@@ -16,6 +16,7 @@ namespace Transporte
         public TarjetaTipo TarjetaTipo { get; set; } = new TarjetaTipo(1, "Normal", 0m);
 
         public List<Boleto> Boletos { get; set; } = new List<Boleto>();
+        public List<RetiroDeBici> RetirosDeBici { get; set; } = new List<RetiroDeBici>();
 
         private readonly decimal[] montosAceptados = new decimal[] { 2000, 3000, 4000, 5000, 8000, 10000, 15000, 20000, 25000, 30000 };
         public const decimal SaldoMaximo = 56000;
@@ -49,6 +50,11 @@ namespace Transporte
         public bool PuedeDescontar(decimal monto)
         {
             return (Saldo - monto) >= LimiteNegativo;
+        }
+
+        public bool TieneSaldoPara(decimal monto)
+        {
+            return Saldo >= monto;
         }
 
         public void Descontar(decimal monto)
